@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html><head>
+	<meta charset="UTF-8">
+</head><body>
+	<style>
+		:root{--fg:#000;--bg:#fff;color:var(--fg);background-color:var(--bg);}
+		@media(prefers-color-scheme:dark){:root{--fg:#fff;--bg:#223;}}
+		pre{overflow:auto}
+	</style>
+	<pre id="log"></pre>
+	<input id="inp">
+	<script>
+		ws=new WebSocket('/ws');
+		ws.onmessage=({data:x})=>(
+			log.textContent+=x,inp.scrollIntoView()
+		);
+		inp.onchange=e=>(ws.send(`${inp.value}\n`),inp.value='');
+	</script>
+</body></html>
