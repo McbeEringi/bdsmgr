@@ -1,0 +1,8 @@
+[Unit]
+Description=MCBE Dedicated Server Manager
+[Service]
+type=forking
+ExecStart=/usr/bin/bun ~/.local/bds.mjs
+Restart=always
+[Install]
+WantedBy=default.target

@@ -5,15 +5,31 @@
 	<style>
 		:root{--fg:#000;--bg:#fff;color:var(--fg);background-color:var(--bg);}
 		@media(prefers-color-scheme:dark){:root{--fg:#fff;--bg:#223;}}
-		pre{overflow:auto}
+		pre{overflow:auto;background-color:#8882;padding:8px;box-sizing:border-box;border-radius:12px;}
 	</style>
 	<pre id="log"></pre>
-	<input id="inp">
+	<input id="inp" disabled>
 	<script>
-		ws=new WebSocket('/ws');
-		ws.onmessage=({data:x})=>(
-			log.textContent+=x,inp.scrollIntoView()
-		);
+		let ws;
+		const main=_=>ws=Object.assign(new WebSocket('/ws'),{
+			onopen:_=>(
+				log.textContent='',
+				inp.disabled=0
+			),
+			onclose:_=>(
+				inp.disabled=1,
+				//setTimeout(main,2000)
+				1
+			),
+			onmessage:({data:x})=>(
+				[...log.children].at(-1)?.remove(),
+				log.append(
+					...x.split('\n').map(x=>Object.assign(document.createElement('span'),{textContent:x+'\n'}))
+				),
+				inp.scrollIntoView()
+			)
+		});
+		main();
 		inp.onchange=e=>(ws.send(`${inp.value}\n`),inp.value='');
 	</script>
 </body></html>
