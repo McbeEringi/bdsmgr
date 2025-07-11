@@ -34,7 +34,8 @@ dl=(svr,x)=>(async(
 			log(svr,`${(x/a*100).toFixed(2).padStart(6)} %`)
 		).blob(),
 		log(svr,`100.00 %\n`),
-		Bun.write(`${cfg.dir.dl}/${x.name}`,x.file)
+		Bun.write(`${cfg.dir.dl}/${x.name}`,x.file),
+		log(svr,`Done!\n`)
 	)
 ))(),
 deploy=(svr,x)=>(async(
@@ -52,9 +53,9 @@ deploy=(svr,x)=>(async(
 	x||(
 		x=Bun.file(`${cfg.dir.dl}/${(await readdir(cfg.dir.dl)).sort().pop()}`)
 	),
+	await rm(cfg.dir.exe,{force:!0,recursive:!0}),
 	log(svr,'Extracting...\n'),
 	await Promise.all((await unzip(x)).map(async x=>(
-		await rm(`${cfg.dir.exe}/${x.name}`,{force:!0}),
 		//(await stat(`${cfg.dir.exe}/${x.name}`)).isSymbolicLink()||
 		Bun.write(`${cfg.dir.exe}/${x.name}`,x)
 	))),
@@ -87,7 +88,7 @@ start=async svr=>await Bun.file(`${cfg.dir.exe}/bedrock_server`).exists()?(
 		t
 	))(new EventTarget()),
 	mc.log.addEventListener('data',e=>log(svr,e.detail))
-):log(svr,'No executable found!\nRun `upd`\n'),
+):log(svr,'No executable found!\nRun `dl` `deploy`\n'),
 bauth=r=>Object.entries(cfg.auth).map(([u,p])=>`Basic ${btoa(`${u}:${p}`)}`).includes(r.headers.get('authorization'))?null:
 	new Response(null,{status:401,headers:{'WWW-Authenticate':'Basic realm="main"'}}),
 svr=Bun.serve({
