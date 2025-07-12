@@ -5,6 +5,6 @@ After=network.target
 Type=simple
 WorkingDirectory=PWD
 ExecStart=/usr/bin/bun run PWD/main.mjs
-Restart=on-failure
+Restart=always
 [Install]
 WantedBy=default.target
