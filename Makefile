@@ -3,6 +3,8 @@ run:chmod
 	./main.mjs
 chmod:
 	chmod +x ./main.mjs
+restart:
+	systemctl restart bdsmgr
 install:chmod
 	sed "s|PWD|$(PWD)/|g" bdsmgr.service>~/.config/systemd/user/bdsmgr.service
 	loginctl enable-linger
