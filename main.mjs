@@ -22,27 +22,30 @@ cmd={
 	dl:(svr,x)=>(async(
 		progress=(w,f)=>new Response(new ReadableStream({start:async(c,x,s=[0,+w.headers.get('content-length')],r=w.body.getReader())=>{f(s);while(x=(await r.read()).value){c.enqueue(x);s[0]+=x.length;f(s);}c.close();}}))
 	)=>(
-		log(svr,'Checking update...\n'),
-		x=(
-			await(await fetch('https://net-secondary.web.minecraft-services.net/api/v1.0/download/links')).json()
-		).result.links.find((s=>x=>x.downloadType==s)({win32:'serverBedrockWindows',linux:'serverBedrockLinux'}[process.platform])),
-		x||log(svr,`Unsupported platform "${process.platform}"\n`),
-		x=new URL(x.downloadUrl),
-		x.path=x.pathname.slice(1).split('/'),
-		x.name=x.path.at(-1),
-		x.file=Bun.file(`${cfg.dir.dl}/${x.name}`),
-		// console.log(x),
-		await x.file.exists()?(
-			log(svr,'Already up to date\n'),
-		):(
-			log(svr,'New version found!\nDownloading...\n'),
-			x.file=await progress(await fetch(x).catch(e=>(console.log(e),log(svr,e))),([x,a])=>
-				// console.log(`\u001b[1F${(x/a*100).toFixed(2).padStart(6)} %`)
-				log(svr,`${(x/a*100).toFixed(2).padStart(6)} %`)
-			).blob(),
-			log(svr,`100.00 %\n`),
-			Bun.write(`${cfg.dir.dl}/${x.name}`,x.file),
-			log(svr,`Done!\n`)
+		x[1]?(x=x[1]):(
+			log(svr,'Checking update...\n'),
+			x=(
+				await(await fetch('https://net-secondary.web.minecraft-services.net/api/v1.0/download/links')).json()
+			).result.links.find((s=>x=>x.downloadType==s)({win32:'serverBedrockWindows',linux:'serverBedrockLinux'}[process.platform])),
+			x||log(svr,`Unsupported platform "${process.platform}"\n`),
+			x=x.downloadUrl
+		),
+		x=await(async()=>new URL(x))().catch(e=>(log(svr,e.message),0)),
+		x&&(
+			x.path=x.pathname.slice(1).split('/'),
+			x.name=x.path.at(-1)||x.hostname||void 0,
+			x.file=Bun.file(`${cfg.dir.dl}/${x.name}`),
+			await x.file.exists()?(
+				log(svr,'Already exists\n'),
+			):(
+				log(svr,'New version found!\nDownloading...\n'),
+				x.file=await progress(await fetch(x).catch(e=>(console.log(e),log(svr,e))),([x,a])=>
+					log(svr,`${(x/a*100).toFixed(2).padStart(6)} %`)
+				).blob(),
+				log(svr,`100.00 %\n`),
+				Bun.write(`${cfg.dir.dl}/${x.name}`,x.file),
+				log(svr,`Done!\n`)
+			)
 		)
 	))(),
 	deploy:(svr,x)=>(async(
@@ -57,33 +60,36 @@ cmd={
 			}[le(p+10)](new Uint8Array(w.buffer,(l=>l+30+le(l+26)+le(l+28))(le(p+42,4)),le(p+20,4)))],n,{lastModified:ddt(le(p+12,4))}))()),a.p+=46+le(p+28)+le(p+30)+le(p+32),a
 		),{p:le(e+16,4),a:[]}).a))((w=w.buffer||w,new Uint8Array(w instanceof ArrayBuffer?w:await new Response(w).arrayBuffer())))
 	)=>(
-		x=x[1],
-		(x?(
-			await exists(`${cfg.dir.dl}/${x}`)||(log(svr,`${cfg.dir.dl}/${x} not found!`),0)
-		):(
-			x=await exists(cfg.dir.dl)&&(await readdir(cfg.dir.dl)).sort(),
-			x.length?(x=x.pop()):(log(svr,'Run `dl` first.'),0)
-		))&&(x=Bun.file(`${cfg.dir.dl}/${x}`))
+		x={arg:x[1],ls:await exists(cfg.dir.dl)&&(await readdir(cfg.dir.dl)).sort().reverse()},
+		(
+			x.ls.length?(
+				x=x.ls.find((y=>z=>z.includes(y))(x.arg||'bedrock-server')),
+				x?(log(svr,`Found "${x}" .\n`),x=Bun.file(`${cfg.dir.dl}/${x}`)):(log(svr,'Not found.'),0)
+			):(log(svr,'Run `dl` first.'),0)
+		)
 	)&&(
 		log(svr,'Extracting...\n'),
-		await rm(cfg.dir.exe,{force:!0,recursive:!0}),
-		await Promise.all((await unzip(x)).map(x=>Bun.write(`${cfg.dir.exe}/${x.name}`,x))),
-		await exists(cfg.dir.src)||(
-			log(svr,'Initializing src dir...\n'),
-			await mkdir(cfg.dir.src),
-			await Promise.all(cfg.src.map(async x=>(
-				await exists(`${cfg.dir.exe}/${x}`)?
-					await cp(`${cfg.dir.exe}/${x}`,`${cfg.dir.src}/${x}`,{recursive:!0}):
-					x.at(-1)=='/'?await mkdir(`${cfg.dir.src}/${x}`):await Bun.write(`${cfg.dir.src}/${x}`,''),
-			)))
-		),
-		cfg.src.forEach(async x=>(
-			x=x.replace(/\/$/,''),
-			await Bun.write(`${cfg.dir.exe}/${x}`,''),
-			await rm(`${cfg.dir.exe}/${x}`,{recursive:!0,force:!0}),
-			await symlink(`${'../'.repeat((cfg.dir.exe+x).split('/').length)}${cfg.dir.src}/${x}`,`${cfg.dir.exe}/${x}`)
-		)),
-		log(svr,'Done!\n')
+		x=await unzip(x).catch(e=>(log(svr,'Failed to unzip.'),0)),
+		x&&(
+			await rm(cfg.dir.exe,{force:!0,recursive:!0}),
+			await Promise.all(x.map(x=>Bun.write(`${cfg.dir.exe}/${x.name}`,x))),
+			await exists(cfg.dir.src)||(
+				log(svr,'Initializing src dir...\n'),
+				await mkdir(cfg.dir.src),
+				await Promise.all(cfg.src.map(async x=>(
+					await exists(`${cfg.dir.exe}/${x}`)?
+						await cp(`${cfg.dir.exe}/${x}`,`${cfg.dir.src}/${x}`,{recursive:!0}):
+						x.at(-1)=='/'?await mkdir(`${cfg.dir.src}/${x}`):await Bun.write(`${cfg.dir.src}/${x}`,''),
+				)))
+			),
+			cfg.src.forEach(async x=>(
+				x=x.replace(/\/$/,''),
+				await Bun.write(`${cfg.dir.exe}/${x}`,''),
+				await rm(`${cfg.dir.exe}/${x}`,{recursive:!0,force:!0}),
+				await symlink(`${'../'.repeat((cfg.dir.exe+x).split('/').length)}${cfg.dir.src}/${x}`,`${cfg.dir.exe}/${x}`)
+			)),
+			log(svr,'Done!\n')
+		)
 	))(),
 	start:async svr=>await Bun.file(`${cfg.dir.exe}/bedrock_server`).exists()?(
 		await chmod(`${cfg.dir.exe}/bedrock_server`,755),
