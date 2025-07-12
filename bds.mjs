@@ -12,6 +12,11 @@ log=(svr,x)=>(
 	svr.publish('log',x)
 ),
 td=new TextDecoder(),
+status=async svr=>log(svr,JSON.stringify({
+	cfg:(x=>(x={...x},delete x.auth,x))(cfg),
+	dl:await readdir(cfg.dir.dl).catch(e=>null),
+	src:await readdir(cfg.dir.src,{recursive:!0}).catch(e=>null),
+},0,'\t')),
 dl=(svr,x)=>(async(
 	progress=(w,f)=>new Response(new ReadableStream({start:async(c,x,s=[0,+w.headers.get('content-length')],r=w.body.getReader())=>{f(s);while(x=(await r.read()).value){c.enqueue(x);s[0]+=x.length;f(s);}c.close();}}))
 )=>(
@@ -50,9 +55,13 @@ deploy=(svr,x)=>(async(
 		}[le(p+10)](new Uint8Array(w.buffer,(l=>l+30+le(l+26)+le(l+28))(le(p+42,4)),le(p+20,4)))],n,{lastModified:ddt(le(p+12,4))}))()),a.p+=46+le(p+28)+le(p+30)+le(p+32),a
 	),{p:le(e+16,4),a:[]}).a))((w=w.buffer||w,new Uint8Array(w instanceof ArrayBuffer?w:await new Response(w).arrayBuffer())))
 )=>(
-	x||(
-		x=Bun.file(`${cfg.dir.dl}/${(await readdir(cfg.dir.dl)).sort().pop()}`)
-	),
+	await exists(cfg.dir.dl)&&(x?(
+		await exists(`${cfg.dir.dl}/${x}`)
+	):(
+		x=(await readdir(cfg.dir.dl)).sort(),
+		x.length&&(x=x.pop())
+	))&&(x=Bun.file(`${cfg.dir.dl}/${x}`))
+)?(
 	await rm(cfg.dir.exe,{force:!0,recursive:!0}),
 	log(svr,'Extracting...\n'),
 	await Promise.all((await unzip(x)).map(async x=>(
@@ -72,7 +81,7 @@ deploy=(svr,x)=>(async(
 		await symlink(`${'../'.repeat(cfg.dir.src.split('/').length)}${cfg.dir.src}/${x}`,`${cfg.dir.exe}/${x}`)
 	)),
 	log(svr,'Done!\n')
-))(),
+):log(svr,'Run `dl` first.'))(),
 start=async svr=>await Bun.file(`${cfg.dir.exe}/bedrock_server`).exists()?(
 	await chmod(`${cfg.dir.exe}/bedrock_server`,755),
 	mc=Bun.spawn({
@@ -92,6 +101,7 @@ start=async svr=>await Bun.file(`${cfg.dir.exe}/bedrock_server`).exists()?(
 bauth=r=>Object.entries(cfg.auth).map(([u,p])=>`Basic ${btoa(`${u}:${p}`)}`).includes(r.headers.get('authorization'))?null:
 	new Response(null,{status:401,headers:{'WWW-Authenticate':'Basic realm="main"'}}),
 svr=Bun.serve({
+	port:cfg.port,
 	routes:{
 		'/':r=>bauth(r)||new Response(Bun.file('./index.html')),
 		'/ws':(r,s)=>bauth(r)||(s.upgrade(r),new Response())
@@ -100,16 +110,19 @@ svr=Bun.serve({
 		open:x=>(x.send(log_arr.join('\n')),x.subscribe('log')),
 		message:(_,msg)=>(
 			log(svr,msg),
+			msg=msg.slice(0,-1).split(/\s+/),
 			(mc?x=>({
 				start:_=>log(svr,'Server already running.\n'),
 				dl:_=>dl(svr),
-				deploy:_=>log(svr,'Stop server before deploy.\n')
+				deploy:_=>log(svr,'Stop server before deploy.\n'),
+				status:_=>status(svr)
 			}[x]||(_=>(mc.stdin.write(msg),mc.stdin.flush()))):x=>({
 				start:_=>start(svr),
 				dl:_=>dl(svr),
 				deploy:_=>deploy(svr),
+				status:_=>status(svr),
 				help:_=>log(svr,'Known commands\n\tstart, dl, deploy\n')
-			}[x]||(_=>log(svr,'No server running. Unknown command.\n'))))(msg.slice(0,-1))()
+			}[x]||(_=>log(svr,'No server running. Unknown command.\n'))))(msg[0])(msg)
 		),
 		close:x=>x.unsubscribe('log')
 	}
