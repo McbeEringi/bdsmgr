@@ -5,6 +5,12 @@ export default{
 		exe:'exe',
 		src:'src'
 	},
+	src:[
+		'worlds/',
+		'allowlist.json',
+		'permission.json',
+		'server.properties'
+	],
 	auth:{
 		admin:'admin'
 	}

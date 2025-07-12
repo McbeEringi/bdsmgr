@@ -13,6 +13,7 @@ log=(svr,x)=>(
 ),
 td=new TextDecoder(),
 status=async svr=>log(svr,JSON.stringify({
+	running:!!mc,
 	cfg:(x=>(x={...x},delete x.auth,x))(cfg),
 	dl:await readdir(cfg.dir.dl).catch(e=>null),
 	src:await readdir(cfg.dir.src,{recursive:!0}).catch(e=>null),
@@ -55,33 +56,34 @@ deploy=(svr,x)=>(async(
 		}[le(p+10)](new Uint8Array(w.buffer,(l=>l+30+le(l+26)+le(l+28))(le(p+42,4)),le(p+20,4)))],n,{lastModified:ddt(le(p+12,4))}))()),a.p+=46+le(p+28)+le(p+30)+le(p+32),a
 	),{p:le(e+16,4),a:[]}).a))((w=w.buffer||w,new Uint8Array(w instanceof ArrayBuffer?w:await new Response(w).arrayBuffer())))
 )=>(
-	await exists(cfg.dir.dl)&&(x?(
-		await exists(`${cfg.dir.dl}/${x}`)
+	x=x[1],
+	(x?(
+		await exists(`${cfg.dir.dl}/${x}`)||(log(svr,`${cfg.dir.dl}/${x} not found!`),0)
 	):(
-		x=(await readdir(cfg.dir.dl)).sort(),
-		x.length&&(x=x.pop())
+		x=await exists(cfg.dir.dl)&&(await readdir(cfg.dir.dl)).sort(),
+		x.length?(x=x.pop()):(log(svr,'Run `dl` first.'),0)
 	))&&(x=Bun.file(`${cfg.dir.dl}/${x}`))
-)?(
-	await rm(cfg.dir.exe,{force:!0,recursive:!0}),
+)&&(
 	log(svr,'Extracting...\n'),
-	await Promise.all((await unzip(x)).map(async x=>(
-		//(await stat(`${cfg.dir.exe}/${x.name}`)).isSymbolicLink()||
-		Bun.write(`${cfg.dir.exe}/${x.name}`,x)
-	))),
+	await rm(cfg.dir.exe,{force:!0,recursive:!0}),
+	await Promise.all((await unzip(x)).map(x=>Bun.write(`${cfg.dir.exe}/${x.name}`,x))),
 	await exists(cfg.dir.src)||(
 		log(svr,'Initializing src dir...\n'),
 		await mkdir(cfg.dir.src),
-		['allowlist.json','permissions.json','server.properties'].forEach(async x=>(
-			await cp(`${cfg.dir.exe}/${x}`,`${cfg.dir.src}/${x}`),
-		)),
-		await mkdir(`${cfg.dir.src}/worlds`)
+		await Promise.all(cfg.src.map(async x=>(
+			await exists(`${cfg.dir.exe}/${x}`)?
+				await cp(`${cfg.dir.exe}/${x}`,`${cfg.dir.src}/${x}`,{recursive:!0}):
+				x.at(-1)=='/'?await mkdir(`${cfg.dir.src}/${x}`):await Bun.write(`${cfg.dir.src}/${x}`,''),
+		)))
 	),
-	['allowlist.json','permissions.json','server.properties','worlds'].forEach(async x=>(
-		await rm(`${cfg.dir.exe}/${x}`,{force:!0}),
-		await symlink(`${'../'.repeat(cfg.dir.src.split('/').length)}${cfg.dir.src}/${x}`,`${cfg.dir.exe}/${x}`)
+	cfg.src.forEach(async x=>(
+		x=x.replace(/\/$/,''),
+		await Bun.write(`${cfg.dir.exe}/${x}`,''),
+		await rm(`${cfg.dir.exe}/${x}`,{recursive:!0,force:!0}),
+		await symlink(`${'../'.repeat((cfg.dir.exe+x).split('/').length)}${cfg.dir.src}/${x}`,`${cfg.dir.exe}/${x}`)
 	)),
 	log(svr,'Done!\n')
-):log(svr,'Run `dl` first.'))(),
+))(),
 start=async svr=>await Bun.file(`${cfg.dir.exe}/bedrock_server`).exists()?(
 	await chmod(`${cfg.dir.exe}/bedrock_server`,755),
 	mc=Bun.spawn({
@@ -98,6 +100,7 @@ start=async svr=>await Bun.file(`${cfg.dir.exe}/bedrock_server`).exists()?(
 	))(new EventTarget()),
 	mc.log.addEventListener('data',e=>log(svr,e.detail))
 ):log(svr,'No executable found!\nRun `dl` `deploy`\n'),
+pkill=svr=>mc?(mc.kill(),log(svr,'kill requested.')):log(svr,'No process running.'),
 bauth=r=>Object.entries(cfg.auth).map(([u,p])=>`Basic ${btoa(`${u}:${p}`)}`).includes(r.headers.get('authorization'))?null:
 	new Response(null,{status:401,headers:{'WWW-Authenticate':'Basic realm="main"'}}),
 svr=Bun.serve({
@@ -108,21 +111,23 @@ svr=Bun.serve({
 	},
 	websocket:{
 		open:x=>(x.send(log_arr.join('\n')),x.subscribe('log')),
-		message:(_,msg)=>(
+		message:(arg,msg)=>(
 			log(svr,msg),
-			msg=msg.slice(0,-1).split(/\s+/),
+			arg=msg.slice(0,-1).split(/\s+/),
 			(mc?x=>({
 				start:_=>log(svr,'Server already running.\n'),
-				dl:_=>dl(svr),
+				dl,
 				deploy:_=>log(svr,'Stop server before deploy.\n'),
-				status:_=>status(svr)
+				pkill,
+				status
 			}[x]||(_=>(mc.stdin.write(msg),mc.stdin.flush()))):x=>({
-				start:_=>start(svr),
-				dl:_=>dl(svr),
-				deploy:_=>deploy(svr),
-				status:_=>status(svr),
-				help:_=>log(svr,'Known commands\n\tstart, dl, deploy\n')
-			}[x]||(_=>log(svr,'No server running. Unknown command.\n'))))(msg[0])(msg)
+				start,
+				dl,
+				deploy,
+				status,
+				pkill,
+				help:_=>log(svr,'Known commands\n\tstart, dl, deploy, status, pkill\n')
+			}[x]||(_=>log(svr,'No server running. Unknown command.\n'))))(arg[0])(svr,arg)
 		),
 		close:x=>x.unsubscribe('log')
 	}
