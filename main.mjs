@@ -123,7 +123,7 @@ cmd={
 				(x=>x&&(
 					x.date=new Date(x.date).toISOString(),
 					x=x.type=='INFO'?Object.entries({
-						'Player connected':x=>(x=sp.v.msg2obj(x.body,{date:x.date}),sp.v.xuid[x.xuid]=x.player,online.add(x.xuid),{embeds:[{
+						'Player connected':x=>(x=sp.v.msg2obj(x.body,{date:x.date}),sp.v.xuid[x.xuid]=x.player,sp.v.online.add(x.xuid),{embeds:[{
 							title:`${x.player}が世界にやってきました`,timestamp:x.date,color:0x88ff44,
 							fields:[{name:'ログイン中',value:JSON.stringify([...sp.v.online].map(x=>sp.v.xuid[x]))}]
 						}]}),
