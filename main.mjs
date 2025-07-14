@@ -123,12 +123,12 @@ cmd={
 				(x=>x&&(
 					x.date=new Date(x.date).toISOString(),
 					x=x.type=='INFO'?Object.entries({
-						'Player connected':x=>(x=msg2obj(x.body,{date:x.date}),sp.v.xuid[x.xuid]=x.player,online.add(x.xuid),{embeds:[{
+						'Player connected':x=>(x=sp.v.msg2obj(x.body,{date:x.date}),sp.v.xuid[x.xuid]=x.player,online.add(x.xuid),{embeds:[{
 							title:`${x.player}が世界にやってきました`,timestamp:x.date,color:0x88ff44,
 							fields:[{name:'ログイン中',value:JSON.stringify([...sp.v.online].map(x=>sp.v.xuid[x]))}]
 						}]}),
 						//'Player Spawned':x=>(msg2obj(x.body)),
-						'Player disconnected':x=>(x=msg2obj(x.body,{date:x.date}),sp.v.online.delete(x.xuid),{embeds:[{
+						'Player disconnected':x=>(x=sp.v.msg2obj(x.body,{date:x.date}),sp.v.online.delete(x.xuid),{embeds:[{
 							title:`${x.player}が世界を去りました`,timestamp:x.date,color:0xff8844,
 							fields:sp.v.online.size?[{name:'ログイン中',value:JSON.stringify([...sp.v.online].map(x=>sp.v.xuid[x]))}]:[]
 						}]}),
