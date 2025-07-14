@@ -13,5 +13,7 @@ export default{
 	],
 	auth:{
 		admin:'admin'
-	}
+	},
+	webhook:[
+	]
 };
