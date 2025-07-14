@@ -148,6 +148,9 @@ cmd={
 						}]}),
 						'Version:':x=>({embeds:[{
 							title:x.body,timestamp:x.date,color:0x4488ff
+						}]}),
+						'Game rule':x=>({embeds:[{
+							title:x.body,timestamp:x.date,color:0x4488ff
 						}]})
 					}).reduce((a,[i,f])=>(a||x.body.startsWith(i)&&f(x)),0):(x=>({embeds:[{
 						title:`[${x.type}] ${x.body}`,
