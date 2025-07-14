@@ -104,7 +104,7 @@ cmd={
 			}t.dispatchEvent(new CustomEvent('done',{detail:sp}));sp=null;})(sp.stdout.getReader()),
 			t
 		))(new EventTarget()),
-		sp.log.addEventListener('data',e=>log(svr,e.detail)),
+		sp.log.addEventListener('data',e=>log(svr,e.detail.replace(/.*?Running AutoCompaction.*?\n/g,''))),
 		sp.log.addEventListener('done',e=>log(svr,'Process exitted.')),
 		cfg.webhook?.length&&(
 			sp.v={
@@ -156,11 +156,11 @@ cmd={
 					x&&sp.v.send(x)
 				))(x.match(/^\[(?<date>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}) (?<type>[A-Z]+)\] (?<body>.*)$/)?.groups),
 				x=='Quit correctly'&&sp.v.send({embeds:[{
-					title:'サーバーが正常に終了しました',date:new Date().toISOString(),color:0x4488ff
+					title:'サーバーが正常に終了しました',timestamp:new Date().toISOString(),color:0x4488ff
 				}]})
 			))),
 			sp.log.addEventListener('done',e=>e.detail.v.send({embeds:[{
-				title:'プロセスが終了しました',date:new Date().toISOString(),color:0x4488ff
+				title:'プロセスが終了しました',timestamp:new Date().toISOString(),color:0x4488ff
 			}]}))
 		)
 	):log(svr,'No executable found!\nRun `dl` `deploy`\n'),
