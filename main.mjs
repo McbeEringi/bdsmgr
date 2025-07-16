@@ -185,7 +185,7 @@ cmd={
 							}]}
 						),
 						'Running AutoCompaction...':x=>0,
-						cfg.auto_start||'Server started.':x=>({embeds:[{
+						'Server started.':x=>cfg.auto_start?0:({embeds:[{
 							title:'サーバーが起動しました',timestamp:x.date,color:0x4488ff
 						}]}),
 						'Version:':x=>({embeds:[{
