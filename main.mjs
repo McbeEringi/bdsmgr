@@ -35,7 +35,7 @@ sc_start=(svr,f,ac=5)=>sp||(async(
 			data:async(sock,x,port,addr)=>(
 				addr.slice(0,4)=='100.'&&(
 					x[0]==1&&magick([...x].slice(9))&&log(svr,`Unconnected Ping from ${addr}\n`),
-					x[0]==5&&magick([...x].slice(1))&&log(svr,`Open Connection Request from ${addr}\n`)
+					x[0]==5&&magick([...x].slice(1))&&log(svr,`Open Connection Request from ${addr} length: ${x.length}\n`)
 				),
 				prop.enable_lan_visibility=='true'&&x[0]==1&&magick([...x].slice(9))&&(s=>sock.send(new Uint8Array([
 					0x1c,...[...x].slice(1,9),...[...Array(8)].map(_=>Math.random()*256|0),
