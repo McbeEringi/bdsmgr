@@ -143,7 +143,7 @@ cmd={
 			(async(r,x)=>{while(1){
 				x=await r.read();if(x.done)break;
 				t.dispatchEvent(new CustomEvent('data',{detail:td.decode(x.value)}));
-			}t.dispatchEvent(new CustomEvent('done',{detail:sp}));sp=null;})(sp.stdout.getReader()),
+			}sp=null;t.dispatchEvent(new CustomEvent('done'));})(sp.stdout.getReader()),// BUG?: sp=null required before dispatchEvent to reconnect but no error occurs
 			t
 		))(new EventTarget()),
 		sp.log.addEventListener('data',e=>log(svr,e.detail.replace(/.*?Running AutoCompaction.*?\n/g,''))),
