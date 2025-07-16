@@ -5,17 +5,54 @@ import { chmod, cp, exists, mkdir, readdir, rm, stat, symlink } from'node:fs/pro
 
 let
 sp,
+sc,
 log_arr=[];
 const
+prop=await(async x=>x.exists()?(await x.text()).replace(/^#[^\n]*?\n/mg,'').split('\n').reduce((a,x,i)=>(
+	x&&([i,x]=x.split('=',2).map(x=>x.trim()),a[i.replace(/-/g,'_')]=x),a
+),{}):{})(Bun.file(`${cfg.dir.exe}/server.properties`)),
+delay=m=>new Promise(f=>setTimeout(f,m)),
 log=(svr,x)=>(
 	log_arr=[...log_arr.slice(-51,-1),...x.split('\n')],
 	svr.publish('log',x)
 ),
 td=new TextDecoder(),
+list=async sp=>await new Promise((f,w)=>(
+	sp.log.addEventListener('data',w=x=>(
+		x=x.detail.slice(0,-1).split('\n').reduce((a,x)=>(!x?a:a?(a.players.push(x),a):
+			(x=x.match(/^\[.*?\] There are (?<a>\d+?)\/(?<b>\d+?) players online:$/)?.groups)?{players:[],current:+x.a,max:+x.b}:a
+		),null),
+		x&&(sp.log.removeEventListener('data',w),f(x))
+	)),
+	sp.stdin.write('list\n'),sp.stdin.flush()
+)),
+sc_start=(svr,f,ac=5)=>sp||(async(
+	magick=w=>w.slice(0,16).map(x=>x.toString(16).padStart(2,0)).join('')=='00ffff00fefefefefdfdfdfd12345678'
+)=>(
+	sc=await Bun.udpSocket({
+		port:19132,
+		socket:{
+			data:async(sock,x,port,addr)=>(
+				prop.enable_lan_visibility=='true'&&x[0]==1&&magick([...x].slice(9))&&(s=>sock.send(new Uint8Array([
+					0x1c,...[...x].slice(1,9),...[...Array(8)].map(_=>Math.random()*256|0),
+					0,255,255,0,254,254,254,254,253,253,253,253,0x12,0x34,0x56,0x78,
+					...(l=>[l>>>8&255,l&255])(s.length),...new TextEncoder().encode(s)
+				]),port,addr))(`MCPE;${prop.server_name};;;0;${prop.max_players};;${prop.level_name};${prop.gamemode};`),
+				cfg.auto_start&&x[0]==5&&magick([...x].slice(1))&&(
+					f(),
+					await delay(ac*1e3),
+					sp&&((await list(sp)).current||(sp.stdin.write('stop\n'),sp.stdin.flush()))
+				)
+			)
+		},
+	})
+))(),
 cmd={
 	status:async svr=>log(svr,JSON.stringify({
 		running:!!sp,
+		list:sp&&await list(sp),
 		cfg:(x=>(x={...x},delete x.auth,x))(cfg),
+		prop,
 		dl:await readdir(cfg.dir.dl).catch(e=>null),
 		src:await readdir(cfg.dir.src,{recursive:!0}).catch(e=>null),
 	},0,'\t')),
@@ -92,6 +129,7 @@ cmd={
 		)
 	))(),
 	start:async svr=>await Bun.file(`${cfg.dir.exe}/bedrock_server`).exists()?(
+		sc&&(sc.close(),sc=null),
 		await chmod(`${cfg.dir.exe}/bedrock_server`,755),
 		sp=Bun.spawn({
 			cwd:`./${cfg.dir.exe}`,env:{LD_LIBRARY_PATH:'.'},cmd:['./bedrock_server'],
@@ -105,11 +143,15 @@ cmd={
 			t
 		))(new EventTarget()),
 		sp.log.addEventListener('data',e=>log(svr,e.detail.replace(/.*?Running AutoCompaction.*?\n/g,''))),
-		sp.log.addEventListener('done',e=>log(svr,'Process exitted.')),
+		sp.log.addEventListener('done',e=>(log(svr,'Process exitted.\n'),sc_start(svr,_=>cmd.start(svr)))),
+		cfg.auto_stop&&sp.log.addEventListener('data',async e=>e.detail.includes('Player disconnected')&&(
+			await delay(500),
+			(await list(sp)).current||(sp.stdin.write('stop\n'),sp.stdin.flush())
+		)),
 		cfg.webhook?.length&&(
 			sp.v={
 				msg2obj:(w,a={})=>w.split(',').reduce((a,x)=>(
-					x=x.split(':',),
+					x=x.split(':'),
 					a[x[0].match(/\S+/)[0].toLowerCase()]=x[1].trim(),
 					a
 				),a),
@@ -143,7 +185,7 @@ cmd={
 							}]}
 						),
 						'Running AutoCompaction...':x=>0,
-						'Server started.':x=>({embeds:[{
+						cfg.auto_start||'Server started.':x=>({embeds:[{
 							title:'サーバーが起動しました',timestamp:x.date,color:0x4488ff
 						}]}),
 						'Version:':x=>({embeds:[{
@@ -158,16 +200,16 @@ cmd={
 					}]}))(x),
 					x&&sp.v.send(x)
 				))(x.match(/^\[(?<date>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}) (?<type>[A-Z]+)\] (?<body>.*)$/)?.groups),
-				x=='Quit correctly'&&sp.v.send({embeds:[{
+				cfg.auto_stop||x=='Quit correctly'&&sp.v.send({embeds:[{
 					title:'サーバーが正常に終了しました',timestamp:new Date().toISOString(),color:0x4488ff
 				}]})
 			))),
-			sp.log.addEventListener('done',e=>e.detail.v.send({embeds:[{
+			cfg.auto_stop||sp.log.addEventListener('done',e=>e.detail.v.send({embeds:[{
 				title:'プロセスが終了しました',timestamp:new Date().toISOString(),color:0x4488ff
 			}]}))
 		)
 	):log(svr,'No executable found!\nRun `dl` `deploy`\n'),
-	pkill:svr=>sp?(sp.kill(),log(svr,'kill requested.')):log(svr,'No process running.')
+	pkill:svr=>sp?(sp.kill(),log(svr,'kill requested.\n')):log(svr,'No process running.\n')
 },
 bauth=r=>Object.entries(cfg.auth).map(([u,p])=>`Basic ${btoa(`${u}:${p}`)}`).includes(r.headers.get('authorization'))?null:
 	new Response(null,{status:401,headers:{'WWW-Authenticate':'Basic realm="main"'}}),
@@ -194,3 +236,5 @@ svr=Bun.serve({
 		close:x=>x.unsubscribe('log')
 	}
 });
+
+sc_start(svr,_=>cmd.start(svr));

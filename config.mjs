@@ -14,6 +14,7 @@ export default{
 	auth:{
 		admin:'admin'
 	},
-	webhook:[
-	]
+	auto_start:true,
+	auto_stop:true,
+	webhook:[]
 };
