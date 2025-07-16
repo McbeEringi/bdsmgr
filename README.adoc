@@ -1,0 +1,32 @@
+= bdsmgr-js
+
+Bedrock Dedicated Server Manager
+
+Sinple wrapper script on BunJS.
+
+== Features
+
+- Remote control
+	- Start, Stop
+	- In-game commands
+	- Update
+- Auto Start
+- Sends Webhook
+	- discord
+
+== Installation
+=== ArchLinux
+[source,sh]
+----
+yay -Sy bun-bin
+make install
+----
+
+== Usage
+http://localhost:3000/
+[source,sh]
+----
+dl
+deploy
+start
+----
