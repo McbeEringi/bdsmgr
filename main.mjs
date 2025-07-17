@@ -227,6 +227,7 @@ svr=Bun.serve({
 	websocket:{
 		open:x=>(x.send(log_arr.join('\n')),x.subscribe('log')),
 		message:(arg,msg)=>(
+			msg.at(-1)=='\n'||(msg+='\n'),
 			log(svr,msg),
 			arg=msg.slice(0,-1).split(/\s+/),
 			(sp?x=>({
