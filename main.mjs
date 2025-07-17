@@ -64,7 +64,7 @@ cmd={
 		prop,
 		dl:await readdir(cfg.dir.dl).catch(e=>null),
 		src:await readdir(cfg.dir.src,{recursive:!0}).catch(e=>null),
-	},0,'\t')),
+	},0,'\t')+'\n'),
 	dl:(svr,x)=>(async(
 		progress=(w,f)=>new Response(new ReadableStream({start:async(c,x,s=[0,+w.headers.get('content-length')],r=w.body.getReader())=>{f(s);while(x=(await r.read()).value){c.enqueue(x);s[0]+=x.length;f(s);}c.close();}}))
 	)=>(
