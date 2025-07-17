@@ -217,13 +217,16 @@ cmd={
 	):log(svr,'No executable found!\nRun `dl` `deploy`\n'),
 	pkill:svr=>sp?(sp.kill(),log(svr,'kill requested.\n')):log(svr,'No process running.\n')
 },
-bauth=r=>Object.entries(cfg.auth).map(([u,p])=>`Basic ${btoa(`${u}:${p}`)}`).includes(r.headers.get('authorization'))?null:
-	new Response(null,{status:401,headers:{'WWW-Authenticate':'Basic realm="main"'}}),
+auth=({cookies:c,headers:h})=>((w,a='Authorization')=>(
+	w.includes(c.get(a))?(c.set({name:a,value:c.get(a),maxAge:3600}),null):
+	w.includes(h.get(a))?(c.set({name:a,value:h.get(a),maxAge:3600}),new Response(null,{headers:{Refresh:0}})):
+	new Response(null,{status:401,headers:{'WWW-Authenticate':'Basic realm="main"'}})
+))(Object.entries(cfg.auth).map(([u,p])=>`Basic ${btoa(`${u}:${p}`)}`)),
 svr=Bun.serve({
 	port:cfg.port,
 	routes:{
-		'/':r=>bauth(r)||new Response(Bun.file('./index.html')),
-		'/ws':(r,s)=>bauth(r)||(s.upgrade(r),new Response())
+		'/':r=>auth(r)||new Response(Bun.file('./index.html')),
+		'/ws':(r,s)=>auth(r)||(s.upgrade(r),new Response())
 	},
 	websocket:{
 		open:x=>(x.send(log_arr.join('\n')),x.subscribe('log')),
