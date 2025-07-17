@@ -19,7 +19,7 @@ log=(svr,x)=>(
 td=new TextDecoder(),
 list=async sp=>await new Promise((f,w)=>(
 	sp.log.addEventListener('data',w=x=>(
-		x=x.detail.slice(0,-1).split('\n').reduce((a,x)=>(!x?a:a?(a.players.push(x),a):
+		x=x.detail.reduce((a,x)=>(!x?a:a?(a.players.push(x),a):
 			(x=x.match(/^\[.*?\] There are (?<a>\d+?)\/(?<b>\d+?) players online:$/)?.groups)?{players:[],current:+x.a,max:+x.b}:a
 		),null),
 		x&&(sp.log.removeEventListener('data',w),f(x))
@@ -143,13 +143,14 @@ cmd={
 		sp.log=(t=>(
 			(async(r,x)=>{while(1){
 				x=await r.read();if(x.done)break;
-				t.dispatchEvent(new CustomEvent('data',{detail:td.decode(x.value)}));
+				t.dispatchEvent(new CustomEvent('data',{detail:td.decode(x.value).slice(0,-1).split('\n')}));
+				await delay(100);
 			}sp=null;t.dispatchEvent(new CustomEvent('done'));})(sp.stdout.getReader()),// BUG?: sp=null required before dispatchEvent to reconnect but no error occurs
 			t
 		))(new EventTarget()),
-		sp.log.addEventListener('data',e=>log(svr,e.detail.replace(/.*?Running AutoCompaction.*?\n/g,''))),
+		sp.log.addEventListener('data',e=>(e=e.detail.reduce((a,x)=>(x.includes('Running AutoCompaction...')||(a+=x+'\n'),a),''),e&&log(svr,e))),
 		sp.log.addEventListener('done',e=>(log(svr,'Process exitted.\n'),sc_start(svr,_=>cmd.start(svr)))),
-		cfg.auto_stop&&sp.log.addEventListener('data',async e=>e.detail.includes('Player disconnected')&&(
+		cfg.auto_stop&&sp.log.addEventListener('data',async e=>e.detail.some(x=>x.includes('Player disconnected'))&&(
 			await delay(500),
 			(await list(sp)).current||(sp.stdin.write('stop\n'),sp.stdin.flush())
 		)),
@@ -166,7 +167,7 @@ cmd={
 				}))),
 				xuid:{},online:new Set()
 			},
-			sp.log.addEventListener('data',e=>e.detail.slice(0,-1).split('\n').forEach(x=>(
+			sp.log.addEventListener('data',e=>e.detail.forEach(x=>(
 				(x=>x&&(
 					x.date=new Date(x.date).toISOString(),
 					x=x.type=='INFO'?Object.entries({
