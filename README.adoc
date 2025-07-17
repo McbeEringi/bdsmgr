@@ -6,13 +6,13 @@ Sinple wrapper script on BunJS.
 
 == Features
 
-- Remote control
-	- Start, Stop
-	- In-game commands
-	- Update
-- Auto Start
-- Sends Webhook
-	- discord
+* Remote control
+** Start, Stop
+** In-game commands
+** Update
+* Auto Start
+* Sends Webhook
+** discord
 
 == Installation
 === ArchLinux
