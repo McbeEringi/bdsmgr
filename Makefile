@@ -14,4 +14,6 @@ uninstall:
 	systemctl --user disable --now $(NAME)
 	loginctl disable-linger
 	rm ~/.config/systemd/user/$(NAME).service
-
+update:
+	git pull
+	restart
