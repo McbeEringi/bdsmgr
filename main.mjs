@@ -17,19 +17,22 @@ log=(svr,x)=>(
 	svr.publish('log',x)
 ),
 td=new TextDecoder(),
-list=async sp=>await new Promise((f,w)=>(
-	sp.log.addEventListener('data',w=x=>(
-		x=x.detail.reduce((a,x)=>(!x?a:a?(a.players.push(x),a):
+listen=async({target:t,name:n,handler:h,run:r})=>await new Promise((f,_,x)=>(t.addEventListener(n,_=e=>(
+	(x=h(e.detail))&&(e.currentTarget.removeEventListener(n,_),f(x))
+)),r&&r())),
+list=sp=>listen({
+	target:sp.log,name:'data',
+	handler:x=>(
+		x.reduce((a,x)=>(!x?a:a?(a.players.push(x),a):
 			(x=x.match(/^\[.*?\] There are (?<a>\d+?)\/(?<b>\d+?) players online:$/)?.groups)?{players:[],current:+x.a,max:+x.b}:a
-		),null),
-		x&&(sp.log.removeEventListener('data',w),f(x))
-	)),
-	sp.stdin.write('list\n'),sp.stdin.flush()
-)),
+		),null)
+	),
+	run:_=>(sp.stdin.write('list\n'),sp.stdin.flush())
+}),
 sc_start=(svr,f,ac=5)=>sp||(async(
 	magick=w=>w.slice(0,16).map(x=>x.toString(16).padStart(2,0)).join('')=='00ffff00fefefefefdfdfdfd12345678'
 )=>(
-	sc=await Bun.udpSocket({
+	sc=await Bun.udpSocket({// https://wiki.bedrock.dev/servers/raknet
 		port:19132,
 		socket:{
 			data:async(sock,x,port,addr)=>(
@@ -55,6 +58,7 @@ sc_start=(svr,f,ac=5)=>sp||(async(
 cmd={
 	status:async svr=>log(svr,JSON.stringify({
 		running:!!sp,
+		version:sp&&sp.version,
 		list:sp&&await list(sp),
 		cfg:(x=>(x={...x},delete x.auth,x))(cfg),
 		prop,
@@ -148,72 +152,72 @@ cmd={
 			}sp=null;t.dispatchEvent(new CustomEvent('done'));})(sp.stdout.getReader()),// BUG?: sp=null required before dispatchEvent to reconnect but no error occurs
 			t
 		))(new EventTarget()),
+		listen({
+			target:sp.log,name:'data',
+			handler:x=>x.reduce((a,x)=>a||x.match(/Version: ([\d\.]+)/)?.[1],0)
+		}).then(x=>sp.version=x),
 		sp.log.addEventListener('data',e=>(e=e.detail.reduce((a,x)=>(x.includes('Running AutoCompaction...')||(a+=x+'\n'),a),''),e&&log(svr,e))),
 		sp.log.addEventListener('done',e=>(log(svr,'Process exitted.\n'),sc_start(svr,_=>cmd.start(svr)))),
 		cfg.auto_stop&&sp.log.addEventListener('data',async e=>e.detail.some(x=>x.includes('Player disconnected'))&&(
 			await delay(500),
 			(await list(sp)).current||(sp.stdin.write('stop\n'),sp.stdin.flush())
 		)),
-		cfg.webhook?.length&&(
-			sp.v={
-				msg2obj:(w,a={})=>w.split(',').reduce((a,x)=>(
+		cfg.webhook?.length&&((
+				msg2obj=(w,a={})=>w.split(',').reduce((a,x)=>(
 					x=x.split(':'),
 					a[x[0].match(/\S+/)[0].toLowerCase()]=x[1].trim(),
 					a
 				),a),
-				send:w=>Promise.all(cfg.webhook.map(x=>fetch(x,{
+				send=w=>Promise.all(cfg.webhook.map(x=>fetch(x,{
 					method:'POST',headers:{'Content-Type':'application/json'},
 					body:JSON.stringify(w)
 				}))),
-				xuid:{},online:new Set()
-			},
+				xuid={},online=new Set()
+		)=>(
 			sp.log.addEventListener('data',e=>e.detail.forEach(x=>(
 				(x=>x&&(
 					x.date=new Date(x.date).toISOString(),
 					x=x.type=='INFO'?Object.entries({
-						'Player connected':x=>(x=sp.v.msg2obj(x.body,{date:x.date}),sp.v.xuid[x.xuid]=x.player,sp.v.online.add(x.xuid),{embeds:[{
-							title:`${x.player}が世界にやってきました`,timestamp:x.date,color:0x88ff44,
-							fields:[{name:'ログイン中',value:JSON.stringify([...sp.v.online].map(x=>sp.v.xuid[x]))}]
+						'Player connected':x=>(x=msg2obj(x.body,{date:x.date}),xuid[x.xuid]=x.player,online.add(x.xuid),{embeds:[{
+							title:`${x.player}が世界にやってきました`,timestamp:x.date,color:0x88ff44,footer:{text:sp.version},
+							fields:[{name:'ログイン中',value:JSON.stringify([...online].map(x=>xuid[x]))}]
 						}]}),
 						//'Player Spawned':x=>(msg2obj(x.body)),
-						'Player disconnected':x=>(x=sp.v.msg2obj(x.body,{date:x.date}),sp.v.online.delete(x.xuid),{embeds:[{
-							title:`${x.player}が世界を去りました`,timestamp:x.date,color:0xff8844,
-							fields:sp.v.online.size?[{name:'ログイン中',value:JSON.stringify([...sp.v.online].map(x=>sp.v.xuid[x]))}]:[]
+						'Player disconnected':x=>(x=msg2obj(x.body,{date:x.date}),online.delete(x.xuid),{embeds:[{
+							title:`${x.player}が世界を去りました`,timestamp:x.date,color:0xff8844,footer:{text:sp.version},
+							fields:online.size?[{name:'ログイン中',value:JSON.stringify([...online].map(x=>xuid[x]))}]:[]
 						}]}),
 						'Realms Story':x=>(
 							x={date:x.date,...x.body.match(/event: (?<event>.*?), xuids: (?<xuids>.*?)(?:, metadata: (?<metadata>.*?))?$/).groups},
 							{embeds:[{
-								title:x.event,timestamp:x.date,color:0x44ffff,
+								title:x.event,timestamp:x.date,color:0x44ffff,footer:{text:sp.version},
 								fields:[
-									{name:'By',value:JSON.stringify(JSON.parse(x.xuids).map(x=>sp.v.xuid[x]))},
+									{name:'By',value:JSON.stringify(JSON.parse(x.xuids).map(x=>xuid[x]))},
 									...(x.metadata?Object.entries(JSON.parse(x.metadata)).map(([i,x])=>({name:i,value:x})):[])
 								]
 							}]}
 						),
 						'Running AutoCompaction...':x=>0,
 						'Server started.':x=>cfg.auto_start?0:({embeds:[{
-							title:'サーバーが起動しました',timestamp:x.date,color:0x4488ff
-						}]}),
-						'Version:':x=>({embeds:[{
-							title:x.body,timestamp:x.date,color:0x4488ff
+							title:'サーバーが起動しました',timestamp:x.date,color:0x4488ff,footer:{text:sp.version},
 						}]}),
 						'Game rule':x=>({embeds:[{
-							title:x.body,timestamp:x.date,color:0x4488ff
+							title:x.body,timestamp:x.date,color:0x4488ff,footer:{text:sp.version},
 						}]})
 					}).reduce((a,[i,f])=>(a||x.body.startsWith(i)&&f(x)),0):(x=>({embeds:[{
 						title:`[${x.type}] ${x.body}`,
 						timestamp:x.date,color:0xff00ff
 					}]}))(x),
-					x&&sp.v.send(x)
+					x&&send(x)
 				))(x.match(/^\[(?<date>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}) (?<type>[A-Z]+)\] (?<body>.*)$/)?.groups),
-				cfg.auto_stop||x=='Quit correctly'&&sp.v.send({embeds:[{
-					title:'サーバーが正常に終了しました',timestamp:new Date().toISOString(),color:0x4488ff
+				cfg.auto_stop||x=='Quit correctly'&&send({embeds:[{
+					title:'サーバーが正常に終了しました',timestamp:new Date().toISOString(),color:0x4488ff,footer:{text:sp.version},
 				}]})
 			))),
-			cfg.auto_stop||sp.log.addEventListener('done',e=>e.detail.v.send({embeds:[{
+			cfg.auto_stop||sp.log.addEventListener('done',e=>send({embeds:[{
 				title:'プロセスが終了しました',timestamp:new Date().toISOString(),color:0x4488ff
 			}]}))
-		)
+		))()
 	):log(svr,'No executable found!\nRun `dl` `deploy`\n'),
 	pkill:svr=>sp?(sp.kill(),log(svr,'kill requested.\n')):log(svr,'No process running.\n')
 },
