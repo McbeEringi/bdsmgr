@@ -47,9 +47,10 @@ sc_start=(svr,f,ac=5)=>sp||(async(
 					...(l=>[l>>>8&255,l&255])(s.length),...new TextEncoder().encode(s)
 				]),port,addr))(`MCPE;${prop.server_name};;;0;${prop.max_players};;${prop.level_name};${prop.gamemode};`),
 				cfg.auto_start&&x[0]==5&&magick([...x].slice(1))&&(
-					f(),
-					await delay(ac*1e3),
-					sp&&((await list(sp)).current||(sp.stdin.write('stop\n'),sp.stdin.flush()))
+					await f()&&(
+						await delay(ac*1e3),
+						sp&&((await list(sp)).current||(sp.stdin.write('stop\n'),sp.stdin.flush()))
+					)
 				)
 			)
 		},
@@ -135,7 +136,7 @@ cmd={
 				// Windows requires Admin or DevMode for symlink...
 				await symlink(`${'../'.repeat((cfg.dir.exe+x).split('/').length)}${cfg.dir.src}/${x}`,`${cfg.dir.exe}/${x}`)
 			)),
-			log(svr,'Done!\n')
+			log(svr,'Done!\n'),1
 		)
 	))(),
 	start:async svr=>await Bun.file(`${cfg.dir.exe}/bedrock_server${process.platform=='win32'?'.exe':''}`).exists()?(
@@ -218,8 +219,9 @@ cmd={
 			cfg.auto_stop||sp.log.addEventListener('done',e=>send({embeds:[{
 				title:'プロセスが終了しました',timestamp:new Date().toISOString(),color:0x4488ff
 			}]}))
-		))()
-	):log(svr,'No executable found!\nRun `dl` `deploy`\n'),
+		))(),
+		1
+	):(log(svr,'No executable found!\nRun `dl` `deploy`\n'),0),
 	pkill:svr=>sp?(sp.kill(),log(svr,'kill requested.\n')):log(svr,'No process running.\n')
 },
 auth=({cookies:c,headers:h})=>((w,a='Authorization')=>(
