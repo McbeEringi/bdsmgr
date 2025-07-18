@@ -148,7 +148,7 @@ cmd={
 		sp.log=(t=>(
 			(async(r,x)=>{while(1){
 				x=await r.read();if(x.done)break;
-				t.dispatchEvent(new CustomEvent('data',{detail:td.decode(x.value).slice(0,-1).split('\n')}));
+				t.dispatchEvent(new CustomEvent('data',{detail:td.decode(x.value).slice(0,-1).split(/\r?\n/)}));
 				await delay(100);
 			}sp=null;t.dispatchEvent(new CustomEvent('done'));})(sp.stdout.getReader()),// BUG?: sp=null required before dispatchEvent to reconnect but no error occurs
 			t
