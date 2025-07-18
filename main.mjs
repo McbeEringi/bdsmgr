@@ -132,7 +132,7 @@ cmd={
 				x=x.replace(/\/$/,''),
 				await Bun.write(`${cfg.dir.exe}/${x}`,''),
 				await rm(`${cfg.dir.exe}/${x}`,{recursive:!0,force:!0}),
-				await symlink(`${'../'.repeat((cfg.dir.exe+x).split('/').length)}${cfg.dir.src}/${x}`,`${cfg.dir.exe}/${x}`)
+				await symlink(`${'../'.repeat((cfg.dir.exe+x).split('/').length)}${cfg.dir.src}/${x}`,`${cfg.dir.exe}/${x}`,'junction')
 			)),
 			log(svr,'Done!\n')
 		)
