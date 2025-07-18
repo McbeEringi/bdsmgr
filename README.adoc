@@ -10,7 +10,7 @@ Sinple wrapper script on BunJS.
 ** Start, Stop
 ** In-game commands
 ** Update
-* Auto Start
+* Auto Start, Stop
 * Sends Webhook
 ** discord
 
@@ -28,5 +28,4 @@ http://localhost:3000/
 ----
 dl
 deploy
-start
 ----
