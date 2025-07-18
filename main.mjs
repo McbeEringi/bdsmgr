@@ -8,7 +8,7 @@ sp,
 sc,
 log_arr=[];
 const
-prop=await(async x=>x.exists()?(await x.text()).replace(/^#[^\n]*?\n/mg,'').split('\n').reduce((a,x,i)=>(
+prop=await(async x=>await x.exists()?(await x.text()).replace(/^#[^\n]*?\n/mg,'').split('\n').reduce((a,x,i)=>(
 	x&&([i,x]=x.split('=',2).map(x=>x.trim()),a[i.replace(/-/g,'_')]=x),a
 ),{}):{})(Bun.file(`${cfg.dir.exe}/server.properties`)),
 delay=m=>new Promise(f=>setTimeout(f,m)),
