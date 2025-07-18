@@ -17,7 +17,7 @@ log=(svr,x)=>(
 	svr.publish('log',x)
 ),
 td=new TextDecoder(),
-listen=async({target:t,name:n,handler:h,run:r})=>await new Promise((f,_,x)=>(t.addEventListener(n,_=e=>(
+listen=({target:t,name:n,handler:h,run:r})=>new Promise((f,_,x)=>(t.addEventListener(n,_=e=>(
 	(x=h(e.detail))&&(e.currentTarget.removeEventListener(n,_),f(x))
 )),r&&r())),
 list=sp=>listen({
@@ -223,14 +223,15 @@ cmd={
 },
 auth=({cookies:c,headers:h})=>((w,a='Authorization')=>(
 	w.includes(c.get(a))?(c.set({name:a,value:c.get(a),maxAge:3600}),null):
-	w.includes(h.get(a))?(c.set({name:a,value:h.get(a),maxAge:3600}),new Response(null,{headers:{Refresh:0}})):
+	w.includes(h.get(a))?(c.set(a,h.get(a)),new Response(null,{headers:{Refresh:0}})):
 	new Response(null,{status:401,headers:{'WWW-Authenticate':'Basic realm="main"'}})
 ))(Object.entries(cfg.auth).map(([u,p])=>`Basic ${btoa(`${u}:${p}`)}`)),
 svr=Bun.serve({
 	port:cfg.port,
 	routes:{
 		'/':r=>auth(r)||new Response(Bun.file('./index.html')),
-		'/ws':(r,s)=>auth(r)||(s.upgrade(r),new Response())
+		'/ws':(r,s)=>auth(r)||(s.upgrade(r),new Response()),
+		'/favicon.ico':(r,s)=>new Response(Bun.file('./favicon.ico'))
 	},
 	websocket:{
 		open:x=>(x.send(log_arr.join('\n')),x.subscribe('log')),
