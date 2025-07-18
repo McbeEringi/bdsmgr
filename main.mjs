@@ -139,7 +139,7 @@ cmd={
 	))(),
 	start:async svr=>await Bun.file(`${cfg.dir.exe}/bedrock_server${process.platform=='win32'?'.exe':''}`).exists()?(
 		sc&&(sc.close(),sc=null),
-		await chmod(`${cfg.dir.exe}/bedrock_server`,755),
+		await chmod(`${cfg.dir.exe}/bedrock_server${process.platform=='win32'?'.exe':''}`,755),
 		sp=Bun.spawn({
 			cwd:`./${cfg.dir.exe}`,env:{LD_LIBRARY_PATH:'.'},cmd:[`./bedrock_server${process.platform=='win32'?'.exe':''}`],
 			stdin:'pipe',stdout:'pipe'
