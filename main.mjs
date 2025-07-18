@@ -129,10 +129,10 @@ cmd={
 				)))
 			),
 			cfg.src.forEach(async x=>(
-				x=x.replace(/\/$/,''),
+				x=Object.assign(x.replace(/\/$/,''),{dir:x.at(-1)=='/'}),
 				await Bun.write(`${cfg.dir.exe}/${x}`,''),
 				await rm(`${cfg.dir.exe}/${x}`,{recursive:!0,force:!0}),
-				await symlink(`${'../'.repeat((cfg.dir.exe+x).split('/').length)}${cfg.dir.src}/${x}`,`${cfg.dir.exe}/${x}`,'junction')
+				await symlink(`${'../'.repeat((cfg.dir.exe+x).split('/').length)}${cfg.dir.src}/${x}`,`${cfg.dir.exe}/${x}`,x.dir?'junction':'file')
 			)),
 			log(svr,'Done!\n')
 		)
