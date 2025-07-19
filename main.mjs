@@ -39,8 +39,8 @@ sc_start=(svr,f,ac=5)=>sp||(async(
 				addr=Object.assign(addr,{name:(
 					x=>x&&x.Node.Name.match(/[^\.]+/)?.[0]
 				)(await Bun.$`tailscale whois --json ${addr}`.json().catch(e=>null))}),
-				x[0]==1&&magick([...x].slice(9))&&addr.slice(0,4)=='100.'&&log(svr,`Unconnected Ping from ${addr.name} (${addr})\n`),
-				x[0]==5&&magick([...x].slice(1))&&log(svr,`Open Connection Request 1 from ${addr.name} (${addr}) length: ${x.length}\n`),
+				x[0]==1&&magick([...x].slice(9))&&addr.slice(0,4)=='100.'&&log(svr,`Unconnected Ping from ${addr} (${addr.name})\n`),
+				x[0]==5&&magick([...x].slice(1))&&log(svr,`Open Connection Request 1 from ${addr} (${addr.name}) length: ${x.length}\n`),
 				prop.enable_lan_visibility=='true'&&x[0]==1&&magick([...x].slice(9))&&(s=>sock.send(new Uint8Array([
 					0x1c,...[...x].slice(1,9),...[...Array(8)].map(_=>Math.random()*256|0),
 					0,255,255,0,254,254,254,254,253,253,253,253,0x12,0x34,0x56,0x78,
