@@ -7,7 +7,7 @@ chmod:
 restart:
 	systemctl --user restart $(NAME)
 install:chmod
-	sed "s|PWD|$(PWD)/|g" $(NAME).service>~/.config/systemd/user/$(NAME).service
+	sed "s|PWD|$(PWD)|g" $(NAME).service>~/.config/systemd/user/$(NAME).service
 	loginctl enable-linger
 	systemctl --user enable --now $(NAME)
 uninstall:
