@@ -1,5 +1,6 @@
 export default{
 	// port:3000,
+	udp_port:19132,
 	dir:{
 		dl:'downloads',
 		exe:'exe',
@@ -8,7 +9,7 @@ export default{
 	src:[
 		'worlds/',
 		'allowlist.json',
-		'permission.json',
+		'permissions.json',
 		'server.properties'
 	],
 	auth:{
@@ -16,5 +17,6 @@ export default{
 	},
 	auto_start:true,
 	auto_stop:true,
-	webhook:[]
+	webhook:[
+	]
 };
