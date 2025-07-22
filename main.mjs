@@ -29,7 +29,7 @@ list=sp=>listen({
 	),
 	run:_=>(sp.stdin.write('list\n'),sp.stdin.flush())
 }),
-sc_start=(svr,f,ac=5)=>sp||(async(
+sc_start=(svr,f,ac=10)=>sp||(async(
 	magick=w=>w.slice(0,16).map(x=>x.toString(16).padStart(2,0)).join('')=='00ffff00fefefefefdfdfdfd12345678'
 )=>(
 	sc=await Bun.udpSocket({// https://wiki.bedrock.dev/servers/raknet
