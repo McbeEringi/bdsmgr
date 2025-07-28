@@ -72,13 +72,13 @@ cmd={
 	)=>(
 		x[1]?(x=x[1]):(
 			log(svr,'Checking update...\n'),
-			x=(
-				await(await fetch('https://net-secondary.web.minecraft-services.net/api/v1.0/download/links')).json()
-			).result.links.find((s=>x=>x.downloadType==s)({win32:'serverBedrockWindows',linux:'serverBedrockLinux'}[process.platform])),
-			x||log(svr,`Unsupported platform "${process.platform}"\n`),
-			x=x.downloadUrl
+			x=await fetch('https://net-secondary.web.minecraft-services.net/api/v1.0/download/links').catch(e=>(log(svr,`Failed to fetch API server.\n`),0)),
+			x&&(x=await x.json().catch(e=>(log(svr,`API server returned invalid JSON.\n`),0))),
+			x&&(x=x?.result?.links?.find?.(
+				(s=>x=>x.downloadType==s)({win32:'serverBedrockWindows',linux:'serverBedrockLinux'}[process.platform])
+			)?.downloadUrl||(log(svr,`Can not find URL for platform "${process.platform}".\n`),0))
 		),
-		x=await(async()=>new URL(x))().catch(e=>(log(svr,e.message),0)),
+		x&&(x=await(async()=>new URL(x))().catch(e=>(log(svr,e.message),0))),
 		x&&(
 			x.path=x.pathname.slice(1).split('/'),
 			x.name=x.path.at(-1)||x.hostname||void 0,
@@ -87,12 +87,15 @@ cmd={
 				log(svr,'Already exists\n'),
 			):(
 				log(svr,'New version found!\nDownloading...\n'),
-				x.file=await progress(await fetch(x).catch(e=>(console.log(e),log(svr,e))),([x,a])=>
-					log(svr,`${(x/a*100).toFixed(2).padStart(6)} %`)
-				).blob(),
-				log(svr,`100.00 %\n`),
-				Bun.write(`${cfg.dir.dl}/${x.name}`,x.file),
-				log(svr,`Done!\n`)
+				x.file=await fetch(x).catch(e=>(log(svr,`Failed to fetch download URL.`),0)),
+				x.file&&(
+					x.file=await progress(x.file,([x,a])=>
+						log(svr,`${(x/a*100).toFixed(2).padStart(6)} %`)
+					).blob(),
+					log(svr,`100.00 %\n`),
+					await Bun.write(`${cfg.dir.dl}/${x.name}`,x.file),
+					log(svr,`Done!\n`)
+				)
 			)
 		)
 	))(),
@@ -174,7 +177,7 @@ cmd={
 				send=w=>Promise.all(cfg.webhook.map(x=>fetch(x,{
 					method:'POST',headers:{'Content-Type':'application/json'},
 					body:JSON.stringify(w)
-				}))),
+				}).catch(e=>(log(svr,`Failed to send webhook msg.\n`),0)))),
 				xuid={},online=new Set()
 		)=>(
 			sp.log.addEventListener('data',e=>e.detail.forEach(x=>(
