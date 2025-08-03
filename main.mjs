@@ -1,7 +1,7 @@
-#!/bin/bun
+#!/bin/env -S bun
 // import index_html from'./index.html';
 import cfg from'./config.mjs';
-import { chmod, cp, exists, mkdir, readdir, rm, stat, symlink } from'node:fs/promises';
+import { chmod, cp, exists, mkdir, readdir, rm, symlink } from'node:fs/promises';
 
 let
 sp,
@@ -153,7 +153,7 @@ cmd={
 		sp.log=(t=>(
 			(async(r,x)=>{while(1){
 				x=await r.read();if(x.done)break;
-				t.dispatchEvent(new CustomEvent('data',{detail:td.decode(x.value).slice(0,-1).split(/\r?\n/)}));
+				t.dispatchEvent(new CustomEvent('data',{detail:td.decode(x.value).split(/\r?\n/).slice(0,-1)}));
 				await delay(100);
 			}sp=null;t.dispatchEvent(new CustomEvent('done'));})(sp.stdout.getReader()),// BUG?: sp=null required before dispatchEvent to reconnect but no error occurs
 			t
