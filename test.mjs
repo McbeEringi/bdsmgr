@@ -1,4 +1,6 @@
 #!/bin/bun
+import cfg from'./config.mjs';
+import { exists, readdir } from'node:fs/promises';
 
 let i=0;
 const
@@ -19,9 +21,6 @@ await Bun.udpSocket({
 });
 
 const
-cfg={auth:{
-	admin:'admin'
-}},
 auth=({cookies:c,headers:h})=>((w,a='Authorization')=>(
 	w.includes(c.get(a))?(c.set({name:a,value:c.get(a),maxAge:3600}),null):
 	w.includes(h.get(a))?(c.set({name:a,value:h.get(a),maxAge:3600}),new Response(null,{headers:{Refresh:0}})):
@@ -36,3 +35,7 @@ Bun.serve({
 	}
 
 });
+
+console.log(
+await exists(cfg.dir.dl)&&(await readdir(cfg.dir.dl)).map(x=>({x,v:(x.match(/\d+/g)??[]).map(x=>+x)})).sort(({v:a},{v:b})=>a.length&&b.length?(a.reduce((a,x,i)=>a||Math.sign((b[i]||0)-x),0)):!a.length)
+);

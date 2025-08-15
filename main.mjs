@@ -29,6 +29,9 @@ list=sp=>listen({
 	),
 	run:_=>(sp.stdin.write('list\n'),sp.stdin.flush())
 }),
+lsdl=async(d=cfg.dir.dl)=>await exists(d)&&(await readdir(d))
+	.map(x=>Object.assign(x,{v:(x.match(/\d+/g)??[]).map(x=>+x)}))
+	.sort(({v:a},{v:b})=>a.length&&b.length?(a.reduce((a,x,i)=>a||Math.sign((b[i]||0)-x),0)):!a.length),
 sc_start=(svr,f,ac=10)=>sp||(async(
 	magick=w=>w.slice(0,16).map(x=>x.toString(16).padStart(2,0)).join('')=='00ffff00fefefefefdfdfdfd12345678'
 )=>(
@@ -64,7 +67,7 @@ cmd={
 		list:sp&&await list(sp),
 		cfg:(x=>(x={...x},delete x.auth,x))(cfg),
 		prop,
-		dl:await readdir(cfg.dir.dl).catch(e=>null),
+		dl:await lsdl(),
 		src:await readdir(cfg.dir.src,{recursive:!0}).catch(e=>null),
 	},0,'\t')+'\n'),
 	dl:(svr,x)=>(async(
@@ -111,7 +114,10 @@ cmd={
 			}[le(p+10)](new Uint8Array(w.buffer,(l=>l+30+le(l+26)+le(l+28))(le(p+42,4)),le(p+20,4)))],n,{lastModified:ddt(le(p+12,4))}))()),a.p+=46+le(p+28)+le(p+30)+le(p+32),a
 		),{p:le(e+16,4),a:[]}).a))((w=w.buffer||w,new Uint8Array(w instanceof ArrayBuffer?w:await new Response(w).arrayBuffer())))
 	)=>(
-		x={arg:x[1],ls:await exists(cfg.dir.dl)&&(await readdir(cfg.dir.dl)).sort().reverse()},
+		x={
+			arg:x[1],
+			ls:await lsdl()
+		},
 		(
 			x.ls.length?(
 				x=x.ls.find((y=>z=>z.includes(y))(x.arg||'bedrock-server')),
