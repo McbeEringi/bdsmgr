@@ -122,11 +122,11 @@ cmd={
 			x.ls.length?(
 				x=x.ls.find((y=>z=>z.includes(y))(x.arg||'bedrock-server')),
 				x?(log(svr,`Found "${x}" .\n`),x=Bun.file(`${cfg.dir.dl}/${x}`)):(log(svr,'Not found.'),0)
-			):(log(svr,'Run `dl` first.'),0)
+			):(log(svr,'Run `dl` first.\n'),0)
 		)
 	)&&(
 		log(svr,'Extracting...\n'),
-		x=await unzip(x).catch(e=>(log(svr,'Failed to unzip.'),0)),
+		x=await unzip(x).catch(e=>(log(svr,`${e.message}\nFailed to unzip.\n`),0)),
 		x&&(
 			await rm(cfg.dir.exe,{force:!0,recursive:!0}),
 			await Promise.all(x.map(x=>Bun.write(`${cfg.dir.exe}/${x.name}`,x))),
