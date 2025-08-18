@@ -32,6 +32,10 @@ list=sp=>listen({
 lsdl=async(d=cfg.dir.dl)=>await exists(d)&&(await readdir(d))
 	.map(x=>Object.assign(x,{v:(x.match(/\d+/g)??[]).map(x=>+x)}))
 	.sort(({v:a},{v:b})=>a.length&&b.length?(a.reduce((a,x,i)=>a||Math.sign((b[i]||0)-x),0)):!a.length),
+wh_send=w=>cfg.webhook?.length&&Promise.all(cfg.webhook.map(x=>fetch(x,{
+	method:'POST',headers:{'Content-Type':'application/json'},
+	body:JSON.stringify(w)
+}).catch(e=>(log(svr,`Failed to send webhook msg.\n`),0)))),
 sc_start=(svr,f,ac=10)=>sp||(async(
 	magick=w=>w.slice(0,16).map(x=>x.toString(16).padStart(2,0)).join('')=='00ffff00fefefefefdfdfdfd12345678'
 )=>(
@@ -122,15 +126,19 @@ cmd={
 		(
 			x.ls.length?(
 				x=x.ls.find((y=>z=>z.includes(y))(x.arg||'bedrock-server')),
-				x?(log(svr,`Found "${x}" .\n`),x=Bun.file(`${cfg.dir.dl}/${x}`)):(log(svr,'Not found.\n'),0)
+				x?(log(svr,`Found "${x}" .\n`),x={
+					name:x,
+					path:`${cfg.dir.dl}/${x}`,
+				},x.file=Bun.file(x.path),x):(log(svr,'Not found.\n'),0)
 			):(log(svr,'Run `dl` first.\n'),0)
 		)
 	)&&(
 		log(svr,'Extracting...\n'),
-		x=await unzip(x).catch(e=>(log(svr,`${e.message}\nFailed to unzip.\n`),0)),
-		x&&(
+		(
+			x.ls=await unzip(x.file).catch(e=>(log(svr,`${e.message}\nFailed to unzip.\n`),0))
+		)&&(
 			await rm(cfg.dir.exe,{force:!0,recursive:!0}),
-			await Promise.all(x.map(x=>Bun.write(`${cfg.dir.exe}/${x.name}`,x))),
+			await Promise.all(x.ls.map(x=>Bun.write(`${cfg.dir.exe}/${x.name}`,x))),
 			await exists(cfg.dir.src)||(
 				log(svr,'Initializing src dir...\n'),
 				await mkdir(cfg.dir.src),
@@ -147,6 +155,9 @@ cmd={
 				// Windows requires Admin or DevMode for symlink...
 				await symlink(`${'../'.repeat((cfg.dir.exe+x).split('/').length)}${cfg.dir.src}/${x}`,`${cfg.dir.exe}/${x}`)
 			)),
+			wh_send({embeds:[{
+				title:`"${x.name}" deployed.`,timestamp:new Date().toISOString(),color:0x4488ff
+			}]}),
 			log(svr,'Done!\n'),1
 		)
 	))(),
@@ -181,10 +192,6 @@ cmd={
 					a[x[0].match(/\S+/)[0].toLowerCase()]=x[1].trim(),
 					a
 				),a),
-				send=w=>Promise.all(cfg.webhook.map(x=>fetch(x,{
-					method:'POST',headers:{'Content-Type':'application/json'},
-					body:JSON.stringify(w)
-				}).catch(e=>(log(svr,`Failed to send webhook msg.\n`),0)))),
 				xuid={},online=new Set()
 		)=>(
 			sp.log.addEventListener('data',e=>e.detail.forEach(x=>(
@@ -221,13 +228,13 @@ cmd={
 						title:`[${x.type}] ${x.body}`,
 						timestamp:x.date,color:0xff00ff
 					}]}))(x),
-					x&&send(x)
+					x&&wh_send(x)
 				))(x.match(/^\[(?<date>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}) (?<type>[A-Z]+)\] (?<body>.*)$/)?.groups),
-				cfg.auto_stop||x=='Quit correctly'&&send({embeds:[{
+				cfg.auto_stop||x=='Quit correctly'&&wh_send({embeds:[{
 					title:'サーバーが正常に終了しました',timestamp:new Date().toISOString(),color:0x4488ff,footer:{text:sp.version},
 				}]})
 			))),
-			cfg.auto_stop||sp.log.addEventListener('done',e=>send({embeds:[{
+			cfg.auto_stop||sp.log.addEventListener('done',e=>wh_send({embeds:[{
 				title:'プロセスが終了しました',timestamp:new Date().toISOString(),color:0x4488ff
 			}]}))
 		))(),
