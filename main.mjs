@@ -44,16 +44,16 @@ sc_start=(svr,f,ac=10)=>sp||(async(
 		socket:{
 			data:async(sock,x,port,addr)=>(
 				x=[...x],
-				addr=Object.assign(addr,{name:(
-					x=>x&&x.Node.Name.match(/[^\.]+/)?.[0]
-				)(await Bun.$`tailscale whois --json ${addr}`.json().catch(e=>null))}),
-				x[0]==1&&magick(x.slice(9))&&addr.startsWith('100.')&&log(svr,`Unconnected Ping from ${addr} (${addr.name})\n`),
-				x[0]==5&&magick(x.slice(1))&&log(svr,`Open Connection Request 1 from ${addr} (${addr.name}) length: ${x.length}\n`),
+				addr={addr,toString:(
+					(x,y)=>(x=x&&x.Node.Name.match(/[^\.]+/)?.[0],_=>x?`${y} (${x})`:y)
+				)(await Bun.$`tailscale whois --json ${addr}`.json().catch(e=>null),addr)},
+				x[0]==1&&magick(x.slice(9))&&addr.addr.startsWith('100.')&&log(svr,`Unconnected Ping from ${addr}\n`),
+				x[0]==5&&magick(x.slice(1))&&log(svr,`Open Connection Request 1 from ${addr} length: ${x.length}\n`),
 				prop.enable_lan_visibility=='true'&&x[0]==1&&magick(x.slice(9))&&(s=>sock.send(new Uint8Array([
 					0x1c,...x.slice(1,9),...[...Array(8)].map(_=>Math.random()*256|0),
 					0,255,255,0,254,254,254,254,253,253,253,253,0x12,0x34,0x56,0x78,
 					...(l=>[l>>>8&255,l&255])(s.length),...te.encode(s)
-				]),port,addr))(`MCPE;${prop.server_name};;;0;${prop.max_players};;${prop.level_name};${prop.gamemode};`),
+				]),port,addr.addr))(`MCPE;${prop.server_name};;;0;${prop.max_players};;${prop.level_name};${prop.gamemode};`),
 				cfg.auto_start&&x[0]==5&&magick([...x].slice(1))&&(
 					await f()&&(
 						await delay(ac*1e3),
