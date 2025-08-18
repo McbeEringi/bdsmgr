@@ -95,11 +95,13 @@ cmd={
 				log(svr,'Already exists\n'),
 			):(
 				log(svr,'New version found!\nDownloading...\n'),
-				x.file=await fetch(x).catch(e=>(log(svr,`Failed to fetch download URL.`),0)),
+				x.file=await fetch(x).catch(e=>(log(svr,`Failed to fetch download URL.\n`),0)),
 				x.file&&(
 					x.file=await progress(x.file,([x,a])=>
 						log(svr,`${(x/a*100).toFixed(2).padStart(6)} %`)
-					).blob(),
+					).blob().catch(e=>(log(svr,`${e.message}\nError occurred while downloading.\n`),0))
+				),
+				x.file&&(
 					log(svr,`100.00 %\n`),
 					await Bun.write(`${cfg.dir.dl}/${x.name}`,x.file),
 					log(svr,`Done!\n`)
