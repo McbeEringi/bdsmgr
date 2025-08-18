@@ -86,6 +86,7 @@ cmd={
 			x.path=x.pathname.slice(1).split('/'),
 			x.name=x.path.at(-1)||x.hostname||void 0,
 			x.file=Bun.file(`${cfg.dir.dl}/${x.name}`),
+			log(svr,`latest: ${x.name}\n`),
 			await x.file.exists()?(
 				log(svr,'Already exists\n'),
 			):(
@@ -121,7 +122,7 @@ cmd={
 		(
 			x.ls.length?(
 				x=x.ls.find((y=>z=>z.includes(y))(x.arg||'bedrock-server')),
-				x?(log(svr,`Found "${x}" .\n`),x=Bun.file(`${cfg.dir.dl}/${x}`)):(log(svr,'Not found.'),0)
+				x?(log(svr,`Found "${x}" .\n`),x=Bun.file(`${cfg.dir.dl}/${x}`)):(log(svr,'Not found.\n'),0)
 			):(log(svr,'Run `dl` first.\n'),0)
 		)
 	)&&(
