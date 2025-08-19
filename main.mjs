@@ -2,15 +2,19 @@
 // import index_html from'./index.html';
 import cfg from'./config.mjs';
 import { chmod, cp, exists, mkdir, readdir, rm, symlink } from'node:fs/promises';
+import * as path from'path';
 
 let
 sp,
 sc,
 log_arr=[];
 const
+svr_id=Bun.argv[2],
+exe=`${cfg.dir.svr}/${svr_id}/${cfg.dir.per_svr.exe}`,
+src=`${cfg.dir.svr}/${svr_id}/${cfg.dir.per_svr.src}`,
 prop=await(async x=>await x.exists()?(await x.text()).replace(/^#[^\n]*?\n/mg,'').split('\n').reduce((a,x,i)=>(
 	x&&([i,x]=x.split('=',2).map(x=>x.trim()),a[i.replace(/-/g,'_')]=x),a
-),{}):{})(Bun.file(`${cfg.dir.exe}/server.properties`)),
+),{}):{})(Bun.file(`${exe}/server.properties`)),
 delay=m=>new Promise(f=>setTimeout(f,m)),
 log=(svr,x)=>(
 	log_arr=[...log_arr.slice(-51,-1),...x.split('\n')],
@@ -77,7 +81,7 @@ cmd={
 	dl:(svr,x)=>(async(
 		progress=(w,f)=>new Response(new ReadableStream({start:async(c,x,s=[0,+w.headers.get('content-length')],r=w.body.getReader())=>{f(s);while(x=(await r.read()).value){c.enqueue(x);s[0]+=x.length;f(s);}c.close();}}))
 	)=>(
-		x[1]?(x=x[1]):(
+		x?.[1]?(x=x[1]):(
 			log(svr,'Checking update...\n'),
 			x=await fetch('https://net-secondary.web.minecraft-services.net/api/v1.0/download/links').catch(e=>(log(svr,`Failed to fetch API server.\n`),0)),
 			x&&(x=await x.json().catch(e=>(log(svr,`API server returned invalid JSON.\n`),0))),
@@ -121,8 +125,9 @@ cmd={
 			}[le(p+10)](new Uint8Array(w.buffer,(l=>l+30+le(l+26)+le(l+28))(le(p+42,4)),le(p+20,4)))],n,{lastModified:ddt(le(p+12,4))}))()),a.p+=46+le(p+28)+le(p+30)+le(p+32),a
 		),{p:le(e+16,4),a:[]}).a))((w=w.buffer||w,new Uint8Array(w instanceof ArrayBuffer?w:await new Response(w).arrayBuffer())))
 	)=>(
+		(await lsdl())?.length||await cmd.dl(svr),
 		x={
-			arg:x[1],
+			arg:x?.[1],
 			ls:await lsdl()
 		},
 		(
@@ -139,23 +144,23 @@ cmd={
 		(
 			x.ls=await unzip(x.file).catch(e=>(log(svr,`${e.message}\nFailed to unzip.\n`),0))
 		)&&(
-			await rm(cfg.dir.exe,{force:!0,recursive:!0}),
-			await Promise.all(x.ls.map(x=>Bun.write(`${cfg.dir.exe}/${x.name}`,x))),
-			await exists(cfg.dir.src)||(
+			await rm(exe,{force:!0,recursive:!0}),
+			await Promise.all(x.ls.map(x=>Bun.write(`${exe}/${x.name}`,x))),
+			await exists(src)||(
 				log(svr,'Initializing src dir...\n'),
-				await mkdir(cfg.dir.src),
+				await mkdir(src),
 				await Promise.all(cfg.src.map(async x=>(
-					await exists(`${cfg.dir.exe}/${x}`)?
-						await cp(`${cfg.dir.exe}/${x}`,`${cfg.dir.src}/${x}`,{recursive:!0}):
-						x.at(-1)=='/'?await mkdir(`${cfg.dir.src}/${x}`):await Bun.write(`${cfg.dir.src}/${x}`,''),
+					await exists(`${exe}/${x}`)?
+						await cp(`${exe}/${x}`,`${src}/${x}`,{recursive:!0}):
+						x.at(-1)=='/'?await mkdir(`${src}/${x}`):await Bun.write(`${src}/${x}`,''),
 				)))
 			),
 			cfg.src.forEach(async x=>(
 				x=Object.assign(x.replace(/\/$/,''),{dir:x.at(-1)=='/'}),
-				await Bun.write(`${cfg.dir.exe}/${x}`,''),
-				await rm(`${cfg.dir.exe}/${x}`,{recursive:!0,force:!0}),
+				await Bun.write(`${exe}/${x}`,''),
+				await rm(`${exe}/${x}`,{recursive:!0,force:!0}),
 				// Windows requires Admin or DevMode for symlink...
-				await symlink(`${'../'.repeat((cfg.dir.exe+x).split('/').length)}${cfg.dir.src}/${x}`,`${cfg.dir.exe}/${x}`)
+				await symlink(path.relative(exe,`${src}/${x}`),`${exe}/${x}`)
 			)),
 			wh_send({embeds:[{
 				title:`"${x.name}" deployed.`,timestamp:new Date().toISOString(),color:0x4488ff
@@ -163,11 +168,11 @@ cmd={
 			log(svr,'Done!\n'),1
 		)
 	))(),
-	start:async svr=>await Bun.file(`${cfg.dir.exe}/bedrock_server${process.platform=='win32'?'.exe':''}`).exists()?(
+	start:async svr=>await Bun.file(`${exe}/bedrock_server${process.platform=='win32'?'.exe':''}`).exists()?(
 		sc&&(sc.close(),sc=null),
-		await chmod(`${cfg.dir.exe}/bedrock_server${process.platform=='win32'?'.exe':''}`,755),
+		await chmod(`${exe}/bedrock_server${process.platform=='win32'?'.exe':''}`,755),
 		sp=Bun.spawn({
-			cwd:`./${cfg.dir.exe}`,env:{LD_LIBRARY_PATH:'.'},cmd:[`./bedrock_server${process.platform=='win32'?'.exe':''}`],
+			cwd:`./${exe}`,env:{LD_LIBRARY_PATH:'.'},cmd:[`./bedrock_server${process.platform=='win32'?'.exe':''}`],
 			stdin:'pipe',stdout:'pipe'
 		}),
 		sp.log=(t=>(
@@ -274,6 +279,16 @@ svr=Bun.serve({
 		close:x=>x.unsubscribe('log')
 	}
 });
+
+
+
+if(!svr_id)throw'Server ID not specified! stop.';
+await exists(`${cfg.dir.svr}/${svr_id}`)||(
+	console.log('Initializing...'),
+	await mkdir(`${cfg.dir.svr}/${svr_id}`,{recursive:!0}),
+	await cmd.deploy(svr),
+	console.log('Done.')
+);
 
 sc_start(svr,_=>cmd.start(svr));
 console.log(svr.url.href);

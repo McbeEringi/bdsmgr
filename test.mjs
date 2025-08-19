@@ -1,6 +1,10 @@
 #!/bin/bun
 import cfg from'./config.mjs';
 import { exists, readdir } from'node:fs/promises';
+import { parseArgs } from'util';
+
+const [a]=Bun.argv.slice(2);
+console.log(Bun.fileURLToPath(new URL(a,new URL('root/',Bun.pathToFileURL(import.meta.path)))));
 
 let i=0;
 const
@@ -36,6 +40,6 @@ Bun.serve({
 
 });
 
-console.log(
-await exists(cfg.dir.dl)&&(await readdir(cfg.dir.dl)).map(x=>({x,v:(x.match(/\d+/g)??[]).map(x=>+x)})).sort(({v:a},{v:b})=>a.length&&b.length?(a.reduce((a,x,i)=>a||Math.sign((b[i]||0)-x),0)):!a.length)
-);
+// console.log(
+// await exists(cfg.dir.dl)&&(await readdir(cfg.dir.dl)).map(x=>({x,v:(x.match(/\d+/g)??[]).map(x=>+x)})).sort(({v:a},{v:b})=>a.length&&b.length?(a.reduce((a,x,i)=>a||Math.sign((b[i]||0)-x),0)):!a.length)
+// );

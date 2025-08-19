@@ -3,8 +3,11 @@ export default{
 	udp_port:19132,
 	dir:{
 		dl:'downloads',
-		exe:'exe',
-		src:'src'
+		svr:'servers',
+		per_svr:{
+			exe:'exe',
+			src:'src'
+		}
 	},
 	src:[
 		'worlds/',

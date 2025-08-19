@@ -4,7 +4,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=PWD
-ExecStart=/usr/bin/bun run PWD/main.mjs
+ExecStart=/usr/bin/bun run PWD/main.mjs %i
 Restart=always
 [Install]
 WantedBy=default.target
