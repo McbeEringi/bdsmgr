@@ -1,0 +1,10 @@
+[Unit]
+Description=MCBE Dedicated Server Manager
+After=network.target
+[Service]
+Type=simple
+WorkingDirectory=PWD
+ExecStart=/bin/env -S bun main.mjs %i
+Restart=always
+[Install]
+WantedBy=default.target
