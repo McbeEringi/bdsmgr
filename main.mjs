@@ -21,6 +21,9 @@ port_pool=[...Array(10)].map((_,i)=>({
 	mcbe_ipv6:19201+i*2
 })),
 ls=async x=>(await Bun.$`ls ${x}`.text()).match(/.+?(?=\n)/g)??[],
+rm=async x=>(await Bun.$`rm -r ${x}`.quiet()).exitCode,
+vsort=w=>w.map(x=>Object.assign(x,{v:(x.match(/\d+/g)??[]).map(x=>+x)}))
+	.sort(({v:a},{v:b})=>a.length&&b.length?(a.reduce((a,x,i)=>a||Math.sign((b[i]??0)-x),0)):!a.length),
 cfg=await(async(n,w=Bun.file(`${svrd}/${n}`))=>(
 	await w.exists()?await w.json():await(async x=>(
 		x=[...await(await ls(svrsd)).reduce(async(a,x)=>(
@@ -61,7 +64,14 @@ http=Bun.serve({
 	},
 	websocket:{
 		open:x=>console.log('open'),
-		message:(x,msg)=>(cmd[msg]??(({log})=>log(`Unknown command "${msg}"\n`)))({log:x=>Bun.stdout.write(`\x1b[2K\x1b[0G${x}`),dld,abort,cfg,ls}),
+		message:(x,msg)=>(
+			msg=msg.trim().split(/\s+/),
+			(cmd[msg[0]]??(({log})=>log(`Unknown command "${msg}"\n`)))({
+				log:x=>Bun.stdout.write(`\x1b[2K\x1b[0G${x}`),
+				dld,bind,libd,
+				abort,cfg,ls,rm,vsort,arg:msg.slice(1)
+			})
+		),
 		close:x=>console.log('closed')
 	}
 });
