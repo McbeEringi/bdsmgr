@@ -1,4 +1,4 @@
-= bdsmgr-js
+= bdsmgr
 
 Bedrock Dedicated Server Manager
 
