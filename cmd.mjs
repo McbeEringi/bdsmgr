@@ -18,11 +18,11 @@ cmd={
 		dld,
 		abort:signal,
 		x,
-		progress=(w,f,s)=>((r=w.body.getReader(),p=[0,+w.headers.get('content-length')],b,c=_=>(b=1,r.cancel()))=>Array.fromAsync({[Symbol.asyncIterator]:_=>(
-			s.addEventListener('abort',c,{once:1}),f(p),{next:async x=>(
-				x=(await r.read()).value,b&&await Promise.reject({message:'Load aborted.'}),x?(p[0]+=x.length,f(p)):s.removeEventListener('abort',c),{done:!x,value:x}
-			)}
-		)}))()
+		progress=(w,f,s)=>((
+			r=w.body.getReader(),p=[0,+w.headers.get('content-length')],b,c=_=>(b=1,r.cancel()),d=_=>Promise.reject({message:'Load aborted.'})
+		)=>s?.aborted?d():Array.fromAsync({[Symbol.asyncIterator]:_=>(s?.addEventListener('abort',c,{once:1}),f(p),{next:async x=>(
+			x=(await r.read()).value,b&&await d(),x?(p[0]+=x.length,f(p)):s?.removeEventListener('abort',c),{done:!x,value:x}
+		)})}))()
 	})=>(async()=>(
 		log('Checking update...\n'),
 		x=new URL(
