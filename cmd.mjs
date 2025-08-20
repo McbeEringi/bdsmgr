@@ -70,10 +70,11 @@ cmd={
 		),{p:le(e+16,4),a:[]}).a))((w=w.buffer||w,new Uint8Array(w instanceof ArrayBuffer?w:await new Response(w).arrayBuffer())))
 	})=>(async()=>(
 		(await ls(dld)).length||await cmd.deploy({log,dld,abort}),
-		x=vsort(await ls(dld)).find(x=>x.includes(arg[0]??'bedrock-sever')),
+		x=vsort(await ls(dld)).find(x=>x.includes(arg[0]??'bedrock-server')),
 		x??await Promise.reject(new Error('File not found.')),
 		log(`Extracting...\n`),
 		x=await unzip(Bun.file(`${dld}/${x}`)).catch(e=>Promise.reject(new Error('Failed to unzip.'))),
+		log(`Extracted.\n`)
 
 	))().catch(e=>(log(`${e.message}\ndl: Aborted.\n`),e)),
 	start:_=>_,
