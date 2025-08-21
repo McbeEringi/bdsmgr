@@ -14,6 +14,7 @@ libd=`${svrd}/lib`;
 
 svr_id||await Promise.reject('Server ID not specified!');
 
+// let abort=new AbortController();
 const
 port_pool=[...Array(10)].map((_,i)=>({
 	http:3000+i,
@@ -47,8 +48,6 @@ cfg=await(async(n,w=Bun.file(`${svrd}/${n}`))=>(
 	))()
 ))('config.json'),
 
-abort=new EventTarget(),
-
 
 auth=({cookies:c,headers:h})=>((w,a='Authorization')=>(
 	w.includes(c.get(a))?(c.set({name:a,value:c.get(a),maxAge:3600}),null):
@@ -69,7 +68,8 @@ http=Bun.serve({
 			(cmd[msg[0]]??(({log})=>log(`Unknown command "${msg}"\n`)))({
 				log:x=>Bun.stdout.write(`\x1b[2K\x1b[0G${x}`),
 				dld,bind,libd,
-				abort,cfg,ls,rm,vsort,arg:msg.slice(1)
+				// signal:abort.signal,
+				cfg,ls,rm,vsort,arg:msg.slice(1)
 			})
 		),
 		close:x=>console.log('closed')

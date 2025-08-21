@@ -10,20 +10,12 @@ cmd={
 		cfg,
 		dl:vsort(await ls(dld))
 	},0,'\t')+'\n'),0),
-	abort:({
-		log,
-		abort
-	})=>(abort.dispatchEvent(new CustomEvent('abort')),log(`Abort requested.\n`),0),
 	dl:({
 		log,
 		dld,
-		abort:signal,
+		signal,
 		x,
-		progress=(w,f,s)=>((
-			r=w.body.getReader(),p=[0,+w.headers.get('content-length')],b,c=_=>(b=1,r.cancel()),d=_=>Promise.reject({message:'Load aborted.'})
-		)=>s?.aborted?d():Array.fromAsync({[Symbol.asyncIterator]:_=>(s?.addEventListener('abort',c,{once:1}),f(p),{next:async x=>(
-			x=(await r.read()).value,b&&await d(),x?(p[0]+=x.length,f(p)):s?.removeEventListener('abort',c),{done:!x,value:x}
-		)})}))()
+		progress=(w,f)=>((r=w.body.getReader(),p=[0,+w.headers.get('content-length')])=>Array.fromAsync({[Symbol.asyncIterator]:_=>(f(p),{next:async x=>(x=(await r.read()).value,x&&(p[0]+=x.length,f(p)),{done:!x,value:x})})}))()
 	})=>(async()=>(
 		log('Checking update...\n'),
 		x=new URL(
@@ -40,8 +32,7 @@ cmd={
 			log(`New version!\nDownloading...\n`),
 			await Bun.write(x.file.name,new Blob(await progress(
 				await fetch(x,{signal}),
-				([x,a])=>log(`${(x/a*100).toFixed(2).padStart(6)} %`),
-				signal
+				([x,a])=>log(`${(x/a*100).toFixed(2).padStart(6)} %`)
 			)),log(`100.00 %\n`)),
 			log(`dl: Done.\n`)
 		),
@@ -55,7 +46,7 @@ cmd={
 		ls,
 		rm,
 		vsort,
-		abort,
+		signal,
 		arg,
 		x,
 		unzip=async(w=new Blob())=>((
@@ -69,7 +60,7 @@ cmd={
 			}[le(p+10)](new Uint8Array(w.buffer,(l=>l+30+le(l+26)+le(l+28))(le(p+42,4)),le(p+20,4)))],n,{lastModified:ddt(le(p+12,4))}))()),a.p+=46+le(p+28)+le(p+30)+le(p+32),a
 		),{p:le(e+16,4),a:[]}).a))((w=w.buffer||w,new Uint8Array(w instanceof ArrayBuffer?w:await new Response(w).arrayBuffer())))
 	})=>(async()=>(
-		(await ls(dld)).length||await cmd.deploy({log,dld,abort}),
+		(await ls(dld)).length||await cmd.deploy({log,dld,signal}),
 		x=vsort(await ls(dld)).find(x=>x.includes(arg[0]??'bedrock-server')),
 		x??await Promise.reject(new Error('File not found.')),
 		log(`Extracting...\n`),
