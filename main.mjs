@@ -100,5 +100,6 @@ http=Bun.serve({
 });
 
 console.log(port_pool[cfg.port_pool_index]);
-console.log(`wscat -c ws://localhost${port_pool[cfg.port_pool_index].http}/ws -H 'Cookie:Authorization=${(([u,p])=>`Basic ${btoa(`${u}:${p}`)}`)(Object.entries(cfg.auth)[0])}'  
-`)
+console.log(`wscat -c ws://localhost:${port_pool[cfg.port_pool_index].http}/ws -H 'Cookie:Authorization=${
+	(([u,p])=>encodeURIComponent(`Basic ${btoa(`${u}:${p}`)}`))(Object.entries(cfg.auth)[0])
+}'`)
