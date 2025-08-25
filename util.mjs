@@ -20,6 +20,7 @@ unzip=async(w=new Blob())=>((
 ),{p:le(e+16,4),a:[]}).a))((w=w.buffer||w,new Uint8Array(w instanceof ArrayBuffer?w:await new Response(w).arrayBuffer()))),
 progress=(w,f)=>((r=w.body.getReader(),p=[0,+w.headers.get('content-length')])=>Array.fromAsync({[Symbol.asyncIterator]:_=>(f(p),{next:async x=>(x=(await r.read()).value,x&&(p[0]+=x.length,f(p)),{done:!x,value:x})})}))();
 
-// Bun.$.throws(0);
-
-export{ls,lsdir,rm,mkdir,vsort,unzip,progress};
+export{
+	ls,lsdir,rm,mkdir,vsort,
+	unzip,progress
+};

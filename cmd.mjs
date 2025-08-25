@@ -6,16 +6,14 @@ const
 cmd={
 	status:async({
 		log,
-		dld,
-		cfg
+		dld,cfg
 	})=>(log(JSON.stringify({
 		cfg,
 		dl:vsort(await ls(dld))
 	},0,'\t')+'\n'),0),
 	dl:({
-		log,
-		dld,
-		signal
+		log,signal,
+		dld
 	},{x}={})=>(async()=>(
 		log('Checking update...\n'),
 		x=new URL(
@@ -39,14 +37,8 @@ cmd={
 		0
 	))().catch(e=>(log(`${e.message}\ndl: Aborted.\n`),e)),
 	deploy:({
-		log,
-		dld,
-		svrd,
-		bind,
-		libd,
-		signal,
-		arg,
-		cfg
+		log,arg,signal,
+		dld,svrd,bind,libd,cfg
 	},{x}={})=>(async()=>(
 		(await ls(dld)).length||(log(`Auto dl...`),await cmd.dl({log,dld,signal})),
 		x=vsort(await ls(dld)).find(x=>x.includes(arg[0]??'bedrock-server')),
