@@ -8,6 +8,8 @@ mkdir=async x=>(await $`mkdir -p "${x}"`.quiet()).exitCode,
 vsort=w=>w.map(x=>Object.assign(x,{v:(x.match(/\d+/g)??[]).map(x=>+x)}))
 	.sort(({v:a},{v:b})=>a.length&&b.length?(a.reduce((a,x,i)=>a||Math.sign((b[i]??0)-x),0)):!a.length),
 
+pprop=w=>w.split('\n').filter(x=>x&&x.trim()[0]!='#').reduce((a,x,i)=>([i,x]=x.split('=',2).map(x=>x.trim()),a[i.replace(/-/g,'_')]=x,a),{}),
+
 unzip=async(w=new Blob())=>((
 	w,e=[...{[Symbol.iterator]:(p=w.length-21)=>({next:_=>({done:[80,75,5,6].every((x,i)=>w[p+i]==x)||!~p,value:--p})})}].pop(),
 	le=(p,l=2)=>[...Array(l)].reduce((a,_,i)=>a|w[p+i]<<8*i,0),td=new TextDecoder(),
