@@ -1,7 +1,7 @@
 #!/bin/env -S bun
 
 import{cmd}from'./cmd.mjs';
-import{ls}from'./util.mjs';
+import{ls,rm}from'./util.mjs';
 // import{}from'node:fs/promises';
 
 const
@@ -10,7 +10,8 @@ dld=`downloads`,
 svrsd=`servers`,
 svrd=`${svrsd}/${svr_id}`,
 bind=`${svrd}/bin`,
-libd=`${svrd}/lib`;
+libd=`${svrd}/lib`,
+logd=`${svrd}/log`;
 
 svr_id||await Promise.reject('Server ID not specified!');
 
@@ -30,6 +31,11 @@ cfg=await(async(n,w=Bun.file(`${svrd}/${n}`))=>(
 		),new Set(Object.keys(port_pool).map(x=>+x)))],
 		await Bun.write(w.name,JSON.stringify(x={
 			port_pool_index:x[0],
+			log:{
+				stdout:false,
+				files:5,
+				size:1024*128
+			},
 			lib:[
 				'worlds/',
 				'allowlist.json',
@@ -44,6 +50,23 @@ cfg=await(async(n,w=Bun.file(`${svrd}/${n}`))=>(
 	))()
 ))('config.json'),
 
+log_init=(w={x:''})=>(
+	((n,x=Bun.file(n))=>(
+		Bun.write(x,''),
+		Object.assign(w,{name:n,file:x,writer:x.writer()})
+	))(`${logd}/${new Date().toISOString()}`),
+	ls(logd,{abs:1}).then(x=>Promise.all(x.slice(0,-cfg.log.files).map(x=>rm(x)))),
+	w
+),
+logf=log_init(),
+log=x=>(
+	http.publish('log',x),
+	cfg.log.stdout&&Bun.stdout.write(`\x1b[2K\x1b[0G${x}`),
+	(!logf.writer||cfg.log.size<logf.file.size)&&log_init(logf),
+	x=x.split('\n'),
+	logf.writer.write(x.slice(0,-1).map(x=>x+'\n').join('')),
+	logf.x=x.at(-1)
+),
 
 auth=({cookies:c,headers:h})=>((w,a='Authorization')=>(
 	w.includes(c.get(a))?(c.set({name:a,value:c.get(a),maxAge:3600}),null):
@@ -58,21 +81,21 @@ http=Bun.serve({
 		'/favicon.ico':(r,s)=>new Response(Bun.file('./assets/favicon.ico'))
 	},
 	websocket:{
-		open:x=>console.log('open'),
+		open:async x=>(x.send(await Bun.file(logf.name).text()+logf.x),x.subscribe('log')),
 		message:(x,msg)=>(
+			log(`> ${msg.trim()}\n`),
 			msg=msg.trim().split(/\s+/),
 			(
 				({
 					abort:({log})=>(abort.abort(),abort=new AbortController(),log(`Abort requested.\n`)),
 					...cmd
-				})[msg[0]]??
-				(({log})=>log(`Unknown command "${msg}"\n`)))({
-				log:x=>Bun.stdout.write(`\x1b[2K\x1b[0G${x}`),
-				dld,svrd,bind,libd,cfg,arg:msg.slice(1),
-				signal:abort.signal
+				})[msg[0]]??(({log})=>log(`Unknown command "${msg}"\n`))
+			)({
+				log,arg:msg.slice(1),signal:abort.signal,
+				dld,svrd,bind,libd,cfg
 			})
 		),
-		close:x=>console.log('closed')
+		close:x=>x.unsubscribe('log')
 	}
 });
 

@@ -1,12 +1,13 @@
 import{$}from'bun';
 
 const
-ls=async(x,{abs}={})=>(a=>abs?a.map(y=>`${a}/${y}`):a)((await $`ls "${x}"`.text()).match(/.+?(?=\n)/g)??[]),
+ls=async(x,{abs}={})=>(a=>abs?a.map(y=>`${x}/${y}`):a)((await $`ls "${x}"`.text()).match(/.+?(?=\n)/g)??[]),
 lsdir=async()=>(await $`ls -d */`.text()).match(/.+?(?=\n)/g)??[],
 rm=async x=>(await $`rm -rf "${x}"`.quiet()).exitCode,
 mkdir=async x=>(await $`mkdir -p "${x}"`.quiet()).exitCode,
 vsort=w=>w.map(x=>Object.assign(x,{v:(x.match(/\d+/g)??[]).map(x=>+x)}))
 	.sort(({v:a},{v:b})=>a.length&&b.length?(a.reduce((a,x,i)=>a||Math.sign((b[i]??0)-x),0)):!a.length),
+
 unzip=async(w=new Blob())=>((
 	w,e=[...{[Symbol.iterator]:(p=w.length-21)=>({next:_=>({done:[80,75,5,6].every((x,i)=>w[p+i]==x)||!~p,value:--p})})}].pop(),
 	le=(p,l=2)=>[...Array(l)].reduce((a,_,i)=>a|w[p+i]<<8*i,0),td=new TextDecoder(),
