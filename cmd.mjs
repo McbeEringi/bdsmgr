@@ -63,6 +63,7 @@ cmd={
 			await symlink(relative(bind,`${libd}/${x}`),`${bind}/${x}`.replace(/\/$/,''))
 		))),
 		log(`deploy: Done.\n`),
+		0
 	))().catch(e=>(log(`${e.message}\ndeploy: Aborted.\n`),e)),
 	start:_=>_,
 	pkill:_=>_,
