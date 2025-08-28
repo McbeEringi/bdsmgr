@@ -1,6 +1,6 @@
 #!/bin/env -S bun
 
-import{cmd}from'./cmd.mjs';
+import{cmd}from'./cmd_.mjs';
 import{ls,rm}from'./util.mjs';
 // import{}from'node:fs/promises';
 
