@@ -34,29 +34,43 @@ BDSMGR=class{
 		config_file:cfgf=`${svrd}/config.toml`,
 		exec_dir:bind=`${svrd}/bin`,
 		data_dir:libd=`${svrd}/lib`,
+		log_dir: logd=`${svrd}/log`,
 
-		log,
+		log:elog,
 		download_dir:dld='downloads'
 	}={}){
 		Object.assign(this,{
-			id,svrd,cfgf,bind,libd,
-			log,dld,
+			id,svrd,cfgf,bind,libd,logd,
+			elog,dld,
 			cfg:null,
 			abort:this.#mkac(),
+			logf:null,
 			proc_udp_starter:this.#mkstarter(),
 			proc_bds:null
 		});
 	}
 	async init(){
-		Object.assign({
-			cfg:await(async x=>await x.exists()?Bun.TOML.parse(await x.text()):{})(Bun.file(this.cfgf))
+		await(async x=>await x.exists()||await Bun.write(x.name,`[log]\nfiles=5\nsize=${1024*128}`))(Bun.file(this.cfgf));
+		Object.assign(this,{
+			cfg:await(async x=>Bun.TOML.parse(await x.text()))(Bun.file(this.cfgf)),
+			logf:this.#mklog()
 		});
 		return this;
 	}
 	static async init(){return await(new this()).init();}
 	#mkstarter(){return(1);}
 	#mkac(){return new AbortController();}
-	status(){}
+	#mklog(w={x:''}){
+		((n,x=Bun.file(n))=>(
+			Bun.write(x,''),
+			Object.assign(w,{name:n,file:x,writer:x.writer()})
+		))(`${this.logd}/${new Date().toISOString()}`);
+		ls(this.logd,{abs:1}).then(x=>Promise.all(x.slice(0,-this.cfg.log.files).map(x=>rm(x)))),
+		w
+	}
+
+	log(){}
+	async status(){log(JSON.stringify({cfg,dl:vsort(await ls(this.dld))},0,'\t'));}
 	deploy(){}
 	abort(){this.abort.abort();log(`Abort requested.\n`);this.abort=this.#mkac();}
 	start(){}
