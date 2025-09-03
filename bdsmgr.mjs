@@ -88,7 +88,7 @@ size=1e5
 		return this;
 	}
 	async status(){this.log(JSON.stringify({cfg,dl:vsort(await ls(this.dld))},0,'\t'));return this;}
-	async deploy({incl}){return await(async x=>(
+	async deploy({incl}={}){return await(async x=>(
 		(await ls(this.dld)).length||(this.log(`Auto dl...`),await dl({log:this.log,dld:this.dld,signal:this.abort.signal})),
 		x=vsort(await ls(this.dld)).find(x=>x.includes(incl??'bedrock-server')),
 		x??await Promise.reject(new Error('File not found.')),
@@ -105,13 +105,13 @@ size=1e5
 					(x.at(-1)=='/'&&await mkdir(`${this.libd}/${x}`))
 			)))
 		),
-		log('symlink...\n'),
+		this.log('symlink...\n'),
 		await Promise.all(this.cfg.lib.map(async x=>(
 			await rm(`${this.bind}/${x}`),
 			// Windows requires Admin or DevMode for symlink...
 			await symlink(relative(this.bind,`${this.libd}/${x}`),`${this.bind}/${x}`.replace(/\/$/,''))
 		))),
-		log(`deploy: Done.\n`),
+		this.log(`deploy: Done.\n`),
 		this
 	))().catch(e=>(this.log(`${e.message}\ndeploy: Aborted.\n`),void 0));}
 	abort(){this.abort.abort();log(`Abort requested.\n`);this.abort=this.#mkac();return this;}
