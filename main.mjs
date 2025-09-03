@@ -12,7 +12,7 @@ svr_id=Bun.argv[2];
 const w=await BDSMGR.init({server_id:void 0});
 // w.log('hello\nworld!\n');
 // w.help();
-// await w.deploy();
+await w.deploy();
 // w.status();
 console.log(w)
 // w.start();

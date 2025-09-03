@@ -1,7 +1,7 @@
 import{$}from'bun';
 
 const
-ls=async(x,{abs}={})=>(a=>abs?a.map(y=>`${x}/${y}`):a)((await $`ls "${x}"`.text()).match(/.+?(?=\n)/g)??[]),
+ls=async(x,{abs}={})=>(a=>abs?a.map(y=>`${x}/${y}`):a)((await $`ls "${x}"`.nothrow().text()).match(/.+?(?=\n)/g)??[]),
 lsdir=async()=>(await $`ls -d */`.text()).match(/.+?(?=\n)/g)??[],
 rm=async x=>(await $`rm -rf "${x}"`.quiet()).exitCode,
 mkdir=async x=>(await $`mkdir -p "${x}"`.quiet()).exitCode,
