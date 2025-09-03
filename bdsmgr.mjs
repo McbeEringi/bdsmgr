@@ -1,4 +1,4 @@
-import{ls,lsdir,rm,mkdir,vsort,delay,listen,unzip,progress}from'./util.mjs';
+import{ls,rm,mkdir,vsort,delay,listen,unzip,progress}from'./util.mjs';
 import{symlink,chmod}from'node:fs/promises';
 import{relative}from'node:path';
 import{networkInterfaces}from'node:os';
