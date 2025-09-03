@@ -148,7 +148,7 @@ BDSMGR=class{
 		return w;
 	}
 	#mkac(){return new AbortController();}
-	async #mklog(w={x:''}){
+	async #mklog(w=this.logf||{x:''}){
 		await(async(n,x=Bun.file(n))=>(
 			await Bun.write(x,''),
 			Object.assign(w,{name:n,file:x,writer:x.writer()})
