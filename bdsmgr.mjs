@@ -11,7 +11,7 @@ dl=({
 	x=new URL(
 		(await(await fetch('https://net-secondary.web.minecraft-services.net/api/v1.0/download/links',{signal})).json())?.result?.links?.find?.(
 			(s=>x=>x.downloadType==s)({win32:'serverBedrockWindows',linux:'serverBedrockLinux'}[process.platform])
-		)?.downloadUrl||await Promise.resolve(new Error(`Can not find URL for platform "${process.platform}".`))
+		)?.downloadUrl||await Promise.reject(new Error(`Can not find URL for platform "${process.platform}".`))
 	),
 	x.name=x.pathname.match(/[^/]+$/)?.[0],
 	x.file=Bun.file(`${dld}/${x.name}`),
@@ -201,7 +201,7 @@ BDSMGR=class{
 			x=x.split(':'),a[x[0].match(/\S+/)[0].toLowerCase()]=x[1].trim(),a
 		),a),
 	)=>(
-		await Bun.file(this.binf).exists()||Promise.reject(new Error('Executable not found.')),
+		await Bun.file(this.binf).exists()||await Promise.reject(new Error('Executable not found.')),
 		this.proc_flint&&(
 			this.proc_flint.v4.close(),
 			this.proc_flint.v6.close(),
