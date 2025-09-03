@@ -152,7 +152,7 @@ BDSMGR=class{
 		await(async(n,x=Bun.file(n))=>(
 			await Bun.write(x,''),
 			Object.assign(w,{name:n,file:x,writer:x.writer()})
-		))(`${this.logd}/${new Date().toISOString().replace(/\D/g,'').slice(2,14)}`);
+		))(`${this.logd}/${new Date().toISOString().replace(/\D/g,'').slice(2,14)}.txt`);
 		await Promise.all((await ls(this.logd,{abs:1})).slice(0,-this.cfg.log.files).map(x=>rm(x)));
 		return w;
 	}
