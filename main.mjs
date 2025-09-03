@@ -27,6 +27,7 @@ svr_id=Bun.argv[2];
 // 	logf.writer.write(x.slice(0,-1).map(x=>x+'\n').join('')),
 // 	logf.x=x.at(-1)
 // );
-console.log(
-(await BDSMGR.init()).cfg
-);
+const w=await BDSMGR.init();
+w.log('hello\nworld!\n');
+w.help();
+console.log(w.cfg);
