@@ -31,4 +31,4 @@ const w=await BDSMGR.init();
 w.log('hello\nworld!\n');
 w.help();
 await w.deploy();
-console.log(w.cfg);
+w.status();

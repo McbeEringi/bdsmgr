@@ -32,7 +32,7 @@ BDSMGR=class{
 		server_id:id='default',
 		server_dir:svrd=`servers/${id}`,
 		download_dir:dld='downloads',
-		config_file:cfgf=`${svrd}/config.toml`,
+		config_file:cfgf=`${svrd}/config.json`,
 		exec_dir:bind=`${svrd}/bin`,
 		data_dir:libd=`${svrd}/lib`,
 		log_dir: logd=`${svrd}/log`,
@@ -44,27 +44,30 @@ BDSMGR=class{
 			cfg:null,
 			abort:this.#mkac(),
 			logf:null,
-			proc_udp_starter:this.#mkstarter(),
+			proc_udp_starter:null,
 			proc_bds:null
 		});
 	}
 	static async log_stdout(x){return await Bun.stdout.write(`\x1b[2K\x1b[0G${x}`);}
-	static default_cfg=`\
-lib=[
-	'worlds/',
-	'allowlist.json',
-	'permissions.json',
-	'server.properties',
-]
-
-[log]
-files=5
-size=1e5
-`;
+	static default_cfg=JSON.stringify({
+		enable:true,
+		lib:[
+			'worlds/',
+			'allowlist.json',
+			'permissions.json',
+			'server.properties',
+		],
+		log:{
+			files:5,
+			size:1e5
+		},
+		webhook:[]
+	},0,'\t');
 	async init(){
 		await(async x=>await x.exists()||await Bun.write(x.name,this.constructor.default_cfg))(Bun.file(this.cfgf));
-		this.cfg=await(async x=>Bun.TOML.parse(await x.text()))(Bun.file(this.cfgf));
+		this.cfg=await Bun.file(this.cfgf).json();
 		this.logf=await this.#mklog();
+		this.cfg.enable&&(this.proc_udp_starter=this.#mkstarter());
 		return this;
 	}
 	static async init(){return await(new this()).init();}
@@ -78,6 +81,7 @@ size=1e5
 		await Promise.all((await ls(this.logd,{abs:1})).slice(0,-this.cfg.log.files).map(x=>rm(x)));
 		return w;
 	}
+	async #wcfg(){await Bun.write(this.cfgf,JSON.stringify(this.cfg,0,'/t'));}
 
 	async log(x){
 		await this.exlog?.(x);
@@ -87,9 +91,9 @@ size=1e5
 		this.logf.x=x.at(-1);
 		return this;
 	}
-	async status(){this.log(JSON.stringify({cfg,dl:vsort(await ls(this.dld))},0,'\t'));return this;}
+	async status(){this.log(JSON.stringify({cfg:this.cfg,dl:vsort(await ls(this.dld))},0,'\t')+'\n');return this;}
 	async deploy({incl}={}){return await(async x=>(
-		(await ls(this.dld)).length||(this.log(`Auto dl...`),await dl({log:this.log,dld:this.dld,signal:this.abort.signal})),
+		(await ls(this.dld)).length||(this.log(`Auto dl...`),await dl({log:x=>this.log(x),dld:this.dld,signal:this.abort.signal})),
 		x=vsort(await ls(this.dld)).find(x=>x.includes(incl??'bedrock-server')),
 		x??await Promise.reject(new Error('File not found.')),
 		this.log(`Extracting...\n`),
