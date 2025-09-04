@@ -1,18 +1,23 @@
 #!/bin/env -S bun
 
 import{BDSMGR}from'./bdsmgr.mjs';
-import{ls,rm}from'./util.mjs';
-// import{}from'node:fs/promises';
-
-const
-svr_id=Bun.argv[2];
-
-// svr_id||await Promise.reject('Server ID not specified!');
 
 const w=await BDSMGR.init({server_id:void 0});
-// w.log('hello\nworld!\n');
-// w.help();
 await w.deploy();
-// w.status();
 console.log(w)
-// w.start();
+
+//
+// const
+// http=Bun.serve({
+// 	port:3000,
+// 	routes:{
+// 		'/a/ws':(r,s)=>(console.log(r),s.upgrade(r,{data:new URL(r.url).pathname}),new Response()),
+// 		'/b/ws':(r,s)=>(s.upgrade(r),new Response()),
+// 		'/favicon.ico':(r,s)=>new Response(Bun.file('./assets/favicon.ico'))
+// 	},
+// 	fetch(r,s){console.log(r,s);return new Response();},
+// 	websocket:{
+// 		open:x=>console.log(x),
+// 		message:(x,msg)=>console.log(x,msg)
+// 	}
+// });

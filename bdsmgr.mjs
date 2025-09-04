@@ -205,9 +205,10 @@ BDSMGR=class{
 		),
 		this.log('symlink...\n'),
 		await Promise.all(this.cfg.lib.map(async x=>(
+			x=x.replace(/\/$/,''),
 			await rm(`${this.bind}/${x}`),
 			// Windows requires Admin or DevMode for symlink...
-			await symlink(relative(this.bind,`${this.libd}/${x}`),`${this.bind}/${x}`.replace(/\/$/,''))
+			await symlink(relative(`${this.bind}/${x}/../`,`${this.libd}/${x}`),`${this.bind}/${x}`)
 		))),
 		this.log(`deploy: Done.\n`),
 		this
