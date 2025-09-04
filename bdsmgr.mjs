@@ -1,5 +1,5 @@
 import{
-	ls,rm,mkdir,vsort,
+	exists,ls,rm,mkdir,vsort,
 	pprop,delay,listen,
 	unzip,progress
 }from'./util.mjs';
@@ -152,6 +152,7 @@ BDSMGR=class{
 			target:w.log,name:'data',
 			handler:x=>x.reduce((a,x)=>a||x.match(/Version: ([\d\.]+)/)?.[1],0)
 		}).then(x=>w.version=x);
+		// TODO xuid online
 		// w.log.addEventListener('data',_=>_);
 		return w;
 	}
@@ -191,7 +192,8 @@ BDSMGR=class{
 		x=await unzip(Bun.file(`${this.dld}/${x}`)).catch(e=>Promise.reject(new Error('Failed to unzip.'))),
 		await rm(this.bind),
 		await Promise.all(x.map(x=>Bun.write(`${this.bind}/${x.name}`,x))),
-		(await ls(this.svrd,{abs:1})).includes(this.libd)||(
+		await exists(this.libd)||(
+			// TODO combine init & symlink
 			this.log('Init lib dir...\n'),
 			// TODO edit server.properties 
 			// avoid port collision

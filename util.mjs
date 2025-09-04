@@ -1,6 +1,7 @@
 import{$}from'bun';
 
 const
+exists=async x=>!(await $`ls "${x.replace(/\/$/,'')}"`.nothrow().quiet()).exitCode,
 ls=async(x,{abs}={})=>(a=>abs?a.map(y=>`${x}/${y}`):a)((await $`ls "${x}"`.nothrow().text()).match(/.+?(?=\n)/g)??[]),
 lsdir=async(x='./')=>(await $`cd "${x}"&&ls -d */`.text()).match(/.+?(?=\n)/g)??[],
 rm=async x=>(await $`rm -rf "${x}"`.quiet()).exitCode,
@@ -27,7 +28,7 @@ unzip=async(w=new Blob())=>((
 progress=(w,f)=>((r=w.body.getReader(),p=[0,+w.headers.get('content-length')])=>Array.fromAsync({[Symbol.asyncIterator]:_=>(f(p),{next:async x=>(x=(await r.read()).value,x&&(p[0]+=x.length,f(p)),{done:!x,value:x})})}))();
 
 export{
-	ls,lsdir,rm,mkdir,vsort,
+	exists,ls,lsdir,rm,mkdir,vsort,
 	pprop,delay,listen,
 	unzip,progress
 };
