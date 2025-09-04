@@ -1,4 +1,8 @@
-import{ls,rm,mkdir,vsort,delay,listen,unzip,progress}from'./util.mjs';
+import{
+	ls,rm,mkdir,vsort,
+	pprop,delay,listen,
+	unzip,progress
+}from'./util.mjs';
 import{symlink,chmod}from'node:fs/promises';
 import{relative}from'node:path';
 import{networkInterfaces}from'node:os';
@@ -37,17 +41,20 @@ BDSMGR=class{
 		exec_dir:bind=`${svrd}/bin`,
 		exec_name:binn=`bedrock_server${process.platform=='win32'?'.exe':''}`,
 		exec_file:binf=`${bind}/${binn}`,
+		prop_file:prpf=`${bind}/server.properties`,
 		data_dir:libd=`${svrd}/lib`,
 		log_dir: logd=`${svrd}/log`,
 		exlog=this.constructor.log_stdout
 	}={}){
 		Object.assign(this,{
-			id,svrd,cfgf,bind,binn,binf,libd,logd,
+			id,svrd,cfgf,bind,binn,binf,prpf,libd,logd,
 			exlog,dld,
 			cfg:null,
 			prop:null,
 			abort:this.#mkac(),
 			td:new TextDecoder(),
+			te:new TextEncoder(),
+			guid:[...Array(8)].map(_=>Math.random()*256|0),
 			logf:null,
 			proc_flint:null,
 			proc_bds:null
@@ -69,17 +76,18 @@ BDSMGR=class{
 		webhook:[]
 	},0,'\t');
 	async init(){
-		await(async x=>await x.exists()||await Bun.write(x.name,this.constructor.default_cfg))(Bun.file(this.cfgf));
-		this.cfg=await Bun.file(this.cfgf).json();
-		// this.prop=await this.#rprop();// TODO
+		this.cfg=await this.#rcfg();
+		this.prop=await this.#rprop();
 		this.logf=await this.#mklog();
 		this.cfg.enable&&(this.proc_flint=await this.#mkflint());
 		return this;
 	}
 	static async init(w){return await(new this(w)).init();}
 	async #mkflint(){
+		this.prop=await this.#rprop();
 		const
-		magick=w=>w.slice(0,16).map(x=>x.toString(16).padStart(2,0)).join('')=='00ffff00fefefefefdfdfdfd12345678',
+		magick=(x=>({str:x,arr:[...Array(x.length/2|0)].map((_,i)=>+('0x'+x.slice(i*2,++i*2)))}))('00ffff00fefefefefdfdfdfd12345678'),
+		is_magick=w=>w.slice(0,16).map(x=>x.toString(16).padStart(2,0)).join('')==magick.str,
 		ip2bin={
 			4:w=>w.split('.').map(x=>(+x).toString(2).padStart(8,0)).join(''),
 			6:w=>w.replace('::',':'.repeat(9-w.match(/:/g).length)).split(':').map(x=>(+('0x0'+x)).toString(2).padStart(16,0)).join('')
@@ -93,20 +101,20 @@ BDSMGR=class{
 		),
 		socket={data:async(sock,x,port,addr)=>(// https://wiki.bedrock.dev/servers/raknet
 			x=[...x],
-			x[0]==1&&magick(x.slice(9))&&is_local(addr)||this.log(`Unconnected Ping from ${addr}\n`),
-			x[0]==5&&magick(x.slice(1))&&(
+			x[0]==1&&is_magick(x.slice(9))&&(
+				is_local(addr)||this.log(`Unconnected Ping from ${addr}\n`),
+				(s=>sock.send(new Uint8Array([
+					0x1c,...x.slice(1,9),...this.guid,...magick.arr,...(l=>[l>>>8&255,l&255])(s.length),...this.te.encode(s)
+				]),port,addr))(`MCPE;${this.prop?.server_name??'bdsmgr'};;;0;${this.prop?.max_players??0};;${this.prop?.level_name??'UNINITIALIZED!'};${this.prop?.gamemode};`)
+			),
+			x[0]==5&&is_magick(x.slice(1))&&(
 				this.log(`Open Connection Request 1 from ${addr} length: ${x.length}\n`),
 				await this.start()&&(await delay(10*1e3),this.proc_bds?.soft_stop?.())
 			)
-			// prop.enable_lan_visibility=='true'&&x[0]==1&&magick(x.slice(9))&&(s=>sock.send(new Uint8Array([
-			// 	0x1c,...x.slice(1,9),...[...Array(8)].map(_=>Math.random()*256|0),
-			// 	0,255,255,0,254,254,254,254,253,253,253,253,0x12,0x34,0x56,0x78,
-			// 	...(l=>[l>>>8&255,l&255])(s.length),...te.encode(s)
-			// ]),port,addr))(`MCPE;${prop.server_name};;;0;${prop.max_players};;${prop.level_name};${prop.gamemode};`)
 		)};
-		return{// TODO port cf. #rprop
-			v4:await Bun.udpSocket({hostname:'0.0.0.0',port:19132,socket}),
-			v6:await Bun.udpSocket({hostname:'::',port:19133,socket})
+		return{// TODO avoid port collision
+			v4:await Bun.udpSocket({hostname:'0.0.0.0',port:this.prop?.server_port??19132,socket}),
+			v6:await Bun.udpSocket({hostname:'::',port:this.prop?.server_portv6??19133,socket})
 		};
 	}
 	async #mkbds(){
@@ -156,8 +164,14 @@ BDSMGR=class{
 		await Promise.all((await ls(this.logd,{abs:1})).slice(0,-this.cfg.log.files).map(x=>rm(x)));
 		return w;
 	}
+	async #rcfg(){
+		await(async x=>await x.exists()||await Bun.write(x.name,this.constructor.default_cfg))(Bun.file(this.cfgf));
+		return await Bun.file(this.cfgf).json();
+	}
 	async #wcfg(){await Bun.write(this.cfgf,JSON.stringify(this.cfg,0,'/t'));}
-	async #rprop(){// TODO read prop cf. #mkflint
+	async #rprop(){
+		const x=Bun.file(this.prpf);
+		return await x.exists()?pprop(await x.text()):null;
 	}
 
 	async log(x){
@@ -179,6 +193,9 @@ BDSMGR=class{
 		await Promise.all(x.map(x=>Bun.write(`${this.bind}/${x.name}`,x))),
 		(await ls(this.svrd,{abs:1})).includes(this.libd)||(
 			this.log('Init lib dir...\n'),
+			// TODO edit server.properties 
+			// avoid port collision
+			// disable lan visibility
 			await Promise.all(this.cfg.lib.map(async (x,y)=>(
 				y=Bun.file(`${this.bind}/${x}`),
 				await y.exists()?
@@ -207,6 +224,7 @@ BDSMGR=class{
 			this.proc_flint.v6.close(),
 			this.proc_flint=null
 		),
+		this.prop=await this.#rprop(),
 		this.proc_bds=await this.#mkbds(),
 		[
 			// logging

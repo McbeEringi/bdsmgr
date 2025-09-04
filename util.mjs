@@ -2,13 +2,13 @@ import{$}from'bun';
 
 const
 ls=async(x,{abs}={})=>(a=>abs?a.map(y=>`${x}/${y}`):a)((await $`ls "${x}"`.nothrow().text()).match(/.+?(?=\n)/g)??[]),
-lsdir=async()=>(await $`ls -d */`.text()).match(/.+?(?=\n)/g)??[],
+lsdir=async(x='./')=>(await $`cd "${x}"&&ls -d */`.text()).match(/.+?(?=\n)/g)??[],
 rm=async x=>(await $`rm -rf "${x}"`.quiet()).exitCode,
 mkdir=async x=>(await $`mkdir -p "${x}"`.quiet()).exitCode,
 vsort=w=>w.map(x=>Object.assign(x,{v:(x.match(/\d+/g)??[]).map(x=>+x)}))
 	.sort(({v:a},{v:b})=>a.length&&b.length?(a.reduce((a,x,i)=>a||Math.sign((b[i]??0)-x),0)):!a.length),
 
-pprop=w=>w.split('\n').filter(x=>x&&x.trim()[0]!='#').reduce((a,x,i)=>([i,x]=x.split('=',2).map(x=>x.trim()),a[i.replace(/-/g,'_')]=x,a),{}),
+pprop=w=>w.split('\n').reduce((a,x,i)=>(x&&(x=x.trim())[0]!='#'&&([i,x]=x.split('=',2).map(x=>x.trim()),a[i.replace(/-/g,'_')]=x),a),{}),
 delay=m=>new Promise(f=>setTimeout(f,m)),
 listen=({target:t,name:n,handler:h,run:r})=>new Promise((f,_,x)=>(t.addEventListener(n,_=e=>(
 	(x=h(e.detail))&&(e.currentTarget.removeEventListener(n,_),f(x))
