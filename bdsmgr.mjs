@@ -1,9 +1,9 @@
 import{
-	exists,ls,rm,mkdir,vsort,
+	exists,ls,rm,mkpdir,mkdir,vsort,
 	pprop,delay,listen,
 	unzip,progress
 }from'./util.mjs';
-import{symlink,chmod}from'node:fs/promises';
+import{symlink,chmod,cp}from'node:fs/promises';
 import{relative}from'node:path';
 import{networkInterfaces}from'node:os';
 
@@ -192,22 +192,18 @@ BDSMGR=class{
 		x=await unzip(Bun.file(`${this.dld}/${x}`)).catch(e=>Promise.reject(new Error('Failed to unzip.'))),
 		await rm(this.bind),
 		await Promise.all(x.map(x=>Bun.write(`${this.bind}/${x.name}`,x))),
-		await exists(this.libd)||(
+		this.log('symlink...\n'),
+		await Promise.all(this.cfg.lib.map(async x=>(
 			// TODO combine init & symlink
-			this.log('Init lib dir...\n'),
 			// TODO edit server.properties 
 			// avoid port collision
 			// disable lan visibility
-			await Promise.all(this.cfg.lib.map(async (x,y)=>(
-				y=Bun.file(`${this.bind}/${x}`),
-				await y.exists()?
-					await Bun.write(`${this.libd}/${x}`,y):
-					(x.at(-1)=='/'&&await mkdir(`${this.libd}/${x}`))
-			)))
-		),
-		this.log('symlink...\n'),
-		await Promise.all(this.cfg.lib.map(async x=>(
+			await exists(`${this.bind}/${x}`)&&await cp(`${this.bind}/${x}`,`${this.libd}/${x}`,{recursive:true,force:false}),
+			await exists(`${this.libd}/${x}`)||(
+				x.at(-1)=='/'?await mkdir(`${this.libd}/${x}`):await Bun.write(`${this.libd}/${x}`,'')
+			),
 			x=x.replace(/\/$/,''),
+			await mkpdir(`${this.bind}/${x}`),
 			await rm(`${this.bind}/${x}`),
 			// Windows requires Admin or DevMode for symlink...
 			await symlink(relative(`${this.bind}/${x}/../`,`${this.libd}/${x}`),`${this.bind}/${x}`)

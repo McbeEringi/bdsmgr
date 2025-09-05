@@ -5,6 +5,7 @@ exists=async x=>!(await $`ls "${x.replace(/\/$/,'')}"`.nothrow().quiet()).exitCo
 ls=async(x,{abs}={})=>(a=>abs?a.map(y=>`${x}/${y}`):a)((await $`ls "${x}"`.nothrow().text()).match(/.+?(?=\n)/g)??[]),
 lsdir=async(x='./')=>(await $`cd "${x}"&&ls -d */`.text()).match(/.+?(?=\n)/g)??[],
 rm=async x=>(await $`rm -rf "${x}"`.quiet()).exitCode,
+mkpdir=async x=>(await $`mkdir -p "$(dirname "${x}")"`.quiet()).exitCode,
 mkdir=async x=>(await $`mkdir -p "${x}"`.quiet()).exitCode,
 vsort=w=>w.map(x=>Object.assign(x,{v:(x.match(/\d+/g)??[]).map(x=>+x)}))
 	.sort(({v:a},{v:b})=>a.length&&b.length?(a.reduce((a,x,i)=>a||Math.sign((b[i]??0)-x),0)):!a.length),
@@ -28,7 +29,7 @@ unzip=async(w=new Blob())=>((
 progress=(w,f)=>((r=w.body.getReader(),p=[0,+w.headers.get('content-length')])=>Array.fromAsync({[Symbol.asyncIterator]:_=>(f(p),{next:async x=>(x=(await r.read()).value,x&&(p[0]+=x.length,f(p)),{done:!x,value:x})})}))();
 
 export{
-	exists,ls,lsdir,rm,mkdir,vsort,
+	exists,ls,lsdir,rm,mkpdir,mkdir,vsort,
 	pprop,delay,listen,
 	unzip,progress
 };

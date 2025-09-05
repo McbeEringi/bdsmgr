@@ -4,7 +4,7 @@ import{BDSMGR}from'./bdsmgr.mjs';
 
 const w=await BDSMGR.init({server_id:void 0});
 await w.deploy();
-console.log(w)
+// console.log(w);
 
 //
 // const
