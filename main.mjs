@@ -53,7 +53,7 @@ sc_start=(svr,f,ac=10)=>sp||(async(
 					0x1c,...x.slice(1,9),...[...Array(8)].map(_=>Math.random()*256|0),
 					0,255,255,0,254,254,254,254,253,253,253,253,0x12,0x34,0x56,0x78,
 					...(l=>[l>>>8&255,l&255])(s.length),...te.encode(s)
-				]),port,addr.x))(`MCPE;${prop.server_name};;;0;${prop.max_players};;${prop.level_name};${prop.gamemode};`),
+				]),port,addr.x))(`MCPE;${prop.server_name};;;0;${prop.max_players};1;${prop.level_name};${prop.gamemode};`),
 				cfg.auto_start&&x[0]==5&&magick([...x].slice(1))&&(
 					await f()&&(
 						await delay(ac*1e3),
