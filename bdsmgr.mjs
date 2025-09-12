@@ -105,7 +105,7 @@ BDSMGR=class{
 				is_local(addr)||this.log(`Unconnected Ping from ${addr}\n`),
 				(s=>sock.send(new Uint8Array([
 					0x1c,...x.slice(1,9),...this.guid,...magick.arr,...(l=>[l>>>8&255,l&255])(s.length),...this.te.encode(s)
-				]),port,addr))(`MCPE;${this.prop?.server_name??'bdsmgr'};;;0;${this.prop?.max_players??0};;${this.prop?.level_name??'UNINITIALIZED!'};${this.prop?.gamemode};`)
+				]),port,addr))(`MCPE;${this.prop?.server_name??'bdsmgr'};;;0;${this.prop?.max_players??0};1;${this.prop?.level_name??'UNINITIALIZED!'};${this.prop?.gamemode};`)
 			),
 			x[0]==5&&is_magick(x.slice(1))&&(
 				this.log(`Open Connection Request 1 from ${addr} length: ${x.length}\n`),
