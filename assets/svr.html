@@ -5,12 +5,13 @@
 	<title>bdsmgr</title>
 </head><body>
 	<style>
-		:root{--fg:#000;--bg:#fff;color:var(--fg);background-color:var(--bg);tab-size:2;}
+		:root{--fg:#000;--bg:#fff;color:var(--fg);background-color:var(--bg);tab-size:2;font-family:monospace;}
 		@media(prefers-color-scheme:dark){:root{--fg:#fff;--bg:#223;}}
 		pre{overflow:auto;background-color:#8882;padding:8px;box-sizing:border-box;border-radius:12px;}
 	</style>
 	<pre id="log"></pre>
 	<input id="inp" disabled><button id="btn">connect</button>
+	<h1 id="id">loading...</h1>
 	<script>
 		let ws;
 		(btn.onclick=_=>(btn.disabled=1,ws=Object.assign(
@@ -28,6 +29,9 @@
 			}
 		)))();
 		inp.onchange=e=>(ws.send(inp.value),inp.value='');
-		document.title+=` ${location.pathname.match(/[^\/]+\/$/)[0].slice(0,-1)}`;
+		(x=>(
+			document.title+=` ${x}`,
+			id.textContent=x
+		))(location.pathname.match(/[^\/]+\/$/)[0].slice(0,-1));
 	</script>
 </body></html>

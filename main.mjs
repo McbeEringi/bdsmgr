@@ -23,12 +23,24 @@ http=Bun.serve({
 	routes:{
 		'/':(r,s)=>new Response(Bun.file('./assets/index.html')),
 		'/list':(r,s)=>new Response(
+			// TODO: delete detection
 			JSON.stringify(Object.keys(svr)),
 			{headers:{'Content-Type':'application/json'}}
 		),
 		'/svr/:id':(r,s)=>Response.redirect(`./${r.params.id}/`),
 		'/svr/:id/':(r,s)=>new Response(Bun.file('./assets/svr.html')),
 		'/svr/:id/ws':(r,s)=>(s.upgrade(r,{data:r.params.id}),new Response()),
+		'/svr/:id/new':async(r,s,x)=>(
+			svr[x=r.params.id]?
+			new Response(null,{status:400,statusText:`server "${x} already exists."`}):
+			(
+				svr[x]=await BDSMGR.init({
+					server_dir:servers_dir+x,
+					exlog:y=>http.publish(x,y)
+				}),
+				Response.redirect(`./`)
+			)
+		),
 		'/favicon.ico':(r,s)=>new Response(Bun.file('./assets/favicon.ico'))
 	},
 	// fetch(r,s){console.log(r,s);return new Response();},
