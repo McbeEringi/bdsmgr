@@ -34,8 +34,7 @@ dl=({
 ))().catch(e=>(log(`${e.message}\ndl: Aborted.\n`),e)),
 BDSMGR=class{
 	constructor({
-		server_id:id='default',
-		server_dir:svrd=`servers/${id}`,
+		server_dir:svrd=`servers/default`,
 		download_dir:dld='downloads',
 		config_file:cfgf=`${svrd}/config.json`,
 		exec_dir:bind=`${svrd}/bin`,
@@ -47,7 +46,7 @@ BDSMGR=class{
 		exlog=this.constructor.log_stdout
 	}={}){
 		Object.assign(this,{
-			id,svrd,cfgf,bind,binn,binf,prpf,libd,logd,
+			svrd,cfgf,bind,binn,binf,prpf,libd,logd,
 			exlog,dld,
 			cfg:null,
 			prop:null,
@@ -183,18 +182,18 @@ BDSMGR=class{
 		this.logf.x=x.at(-1);
 		return this;
 	}
-	async status(){this.log(JSON.stringify({cfg:this.cfg,dl:vsort(await ls(this.dld))},0,'\t')+'\n');return this;}
+	async status(){this.log(JSON.stringify({running:!!this.proc_bds,cfg:this.cfg,dl:vsort(await ls(this.dld))},0,'\t')+'\n');return this;}
 	async deploy({incl}={}){return await(async x=>(
 		(await ls(this.dld)).length||(this.log(`Auto dl...`),await dl({log:x=>this.log(x),dld:this.dld,signal:this.abort.signal})),
 		x=vsort(await ls(this.dld)).find(x=>x.includes(incl??'bedrock-server')),
 		x??await Promise.reject(new Error('File not found.')),
+		this.proc_bds&&await Promise.reject(new Error('Please stop BDS before deploy!')),
 		this.log(`Extracting...\n`),
 		x=await unzip(Bun.file(`${this.dld}/${x}`)).catch(e=>Promise.reject(new Error('Failed to unzip.'))),
 		await rm(this.bind),
 		await Promise.all(x.map(x=>Bun.write(`${this.bind}/${x.name}`,x))),
 		this.log('symlink...\n'),
 		await Promise.all(this.cfg.lib.map(async x=>(
-			// TODO combine init & symlink
 			// TODO edit server.properties 
 			// avoid port collision
 			// disable lan visibility
@@ -217,6 +216,7 @@ BDSMGR=class{
 			x=x.split(':'),a[x[0].match(/\S+/)[0].toLowerCase()]=x[1].trim(),a
 		),a),
 	)=>(
+		this.proc_bds&&await Promise.reject(new Error('BDS already running?')),
 		await Bun.file(this.binf).exists()||await Promise.reject(new Error('Executable not found.')),
 		this.proc_flint&&(
 			this.proc_flint.v4.close(),
@@ -238,7 +238,7 @@ BDSMGR=class{
 	pkill(){this.proc_bds?(this.proc_bds.kill(),this.log(`pkill requested.\n`)):this.log(`No process running.\n`);return this;}
 	help(){this.log(`known props:\n\t${
 		Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(x=>![
-			'constructor','init'
+			'constructor','init','log'
 		].includes(x))
 	}\n`);return this;}
 };
