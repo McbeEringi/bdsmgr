@@ -53,7 +53,7 @@ BDSMGR=class{
 			abort:this.#mkac(),
 			td:new TextDecoder(),
 			te:new TextEncoder(),
-			guid:[...Array(8)].map(_=>Math.random()*256|0),
+			guid:[...Array(8)].map((_,i)=>i?Math.random()*256|0:Math.random()*64|0x80),
 			logf:null,
 			proc_flint:null,
 			proc_bds:null
@@ -104,7 +104,11 @@ BDSMGR=class{
 				is_local(addr)||this.log(`Unconnected Ping from ${addr}\n`),
 				(s=>sock.send(new Uint8Array([
 					0x1c,...x.slice(1,9),...this.guid,...magick.arr,...(l=>[l>>>8&255,l&255])(s.length),...this.te.encode(s)
-				]),port,addr))(`MCPE;${this.prop?.server_name??'bdsmgr'};;;0;${this.prop?.max_players??0};1;${this.prop?.level_name??'UNINITIALIZED!'};${this.prop?.gamemode};`)
+				]),port,addr))(
+					`MCPE;${this.prop?.server_name??'bdsmgr'};;;0;${this.prop?.max_players??0};${
+						this.guid.reduce((a,x)=>((a<<BigInt(8))|BigInt(x)),0n)
+					};${this.prop?.level_name??'UNINITIALIZED!'};${this.prop?.gamemode};`
+				)
 			),
 			x[0]==5&&is_magick(x.slice(1))&&(
 				this.log(`Open Connection Request 1 from ${addr} length: ${x.length}\n`),
@@ -236,6 +240,7 @@ BDSMGR=class{
 		this
 	))().catch(e=>(this.log(`${e.message}\nstart: Aborted.\n`),void 0));}
 	pkill(){this.proc_bds?(this.proc_bds.kill(),this.log(`pkill requested.\n`)):this.log(`No process running.\n`);return this;}
+	cmd(x){this.proc_bds?this.proc_bds.cmd(x):this.log(`Unknown command "${x}".\n`);return this;}
 	help(){this.log(`known props:\n\t${
 		Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(x=>![
 			'constructor','init','log'

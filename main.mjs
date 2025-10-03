@@ -57,11 +57,7 @@ http=Bun.serve({
 			(
 				'status,deploy,abort,start,pkill,help'.split(',').includes(msg)?
 				_=>x[msg]():
-				(
-					x.proc_bds?
-					_=>x.proc_bds.cmd(msg):
-					_=>x.log(`Unknown command "${msg}".\n`)
-				)
+				_=>x.cmd(msg)
 			)()
 		)
 	}
