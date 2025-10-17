@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="512" viewBox="0 0 64 32">
+	<defs>
+		<style>
+			.s{fill:none;stroke:#6f6;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;}
+		</style>
+		<path id="b" class="s" d="m1,0c4-2 7-14 5-14s-4,14 0,14 4-6 0-5"/>
+		<path id="d" class="s" d="m4-5c-5,0 -4,6 -1,5s7-14 5-14 -4,15 0,14"/>
+		<path id="s" class="s" d="m6-6c-1,-3 -6,2 -2,3s1,5 -3,3"/>
+		<path id="m" class="s" d="m1,-6c3-3 0,6 0,6 2-8 6-9 4-1 2-8 6-8 4,0"/>
+		<path id="g" class="s" d="m5,-5c-3-3 -7,8 1,1 0,6 -4,9 -5,8s2-4 6-4"/>
+		<path id="r" class="s" d="m2-5c3-2 1,5 0,5s2-6 5-5"/>
+		<g id="sq">
+			<path d="M0,0v32h64v-32z" fill="#223"/>
+			<path class="s" d="
+				M2,26q32-9,60-9
+				M2,28q32-9,60-9
+			" opacity="0.5"/>
+			<use href="#b" x="3" y="22"/><use href="#d" x="15" y="20"/><use href="#s" x="25" y="18"/>
+			<use href="#m" x="34" y="17"/><use href="#g" x="46" y="16"/><use href="#r" x="54" y="15"/>
+		</g>
+	</defs>
+	<use href="#sq"/>
+</svg>
