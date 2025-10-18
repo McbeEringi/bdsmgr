@@ -32,7 +32,8 @@ export class BDSMGR{
 			port:3000,
 			routes:{
 				'/':(r,s)=>new Response(Bun.file(assets('index.html'))),
-				'/favicon.ico':(r,s)=>new Response(Bun.file(assets('favicon.ico')))
+				'/favicon.ico':(r,s)=>new Response(Bun.file(assets('favicon.ico'))),
+				'/img/*':(r,s)=>new Response(Bun.file(assets(new URL(r.url).pathname)))
 			}
 		})
 	}

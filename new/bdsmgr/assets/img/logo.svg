@@ -9,8 +9,7 @@
 		<path id="m" class="s" d="m1,-6c3-3 0,6 0,6 2-8 6-9 4-1 2-8 6-8 4,0"/>
 		<path id="g" class="s" d="m5,-5c-3-3 -7,8 1,1 0,6 -4,9 -5,8s2-4 6-4"/>
 		<path id="r" class="s" d="m2-5c3-2 1,5 0,5s2-6 5-5"/>
-		<g id="sq">
-			<path d="M0,0v32h64v-32z" fill="#223"/>
+		<g id="rect">
 			<path class="s" d="
 				M2,26q32-9,60-9
 				M2,28q32-9,60-9
@@ -19,5 +18,8 @@
 			<use href="#m" x="34" y="17"/><use href="#g" x="46" y="16"/><use href="#r" x="54" y="15"/>
 		</g>
 	</defs>
-	<use href="#sq"/>
+	<path d="M0,0v32h64v-32z" fill="#223"/>
+	<use href="#rect"/>
+	<view id="_" viewBox="0 32 64 32"/>
+	<use href="#rect" transform="translate(0,32)"/>
 </svg>

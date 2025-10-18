@@ -1,3 +1,3 @@
 # bdsmgr
-![logo](bdsmgr/assets/logo.svg)
+![logo](bdsmgr/assets/img/logo.svg)
  WIP...

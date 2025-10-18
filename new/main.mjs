@@ -5,3 +5,11 @@ const
 w=await BDSMGR.init({root_path:'./'});
 
 w.start();
+
+await Bun.$`${{
+	darwin:'open',
+	freebsd:'xdg-open',
+	linux:'xdg-open',
+	openbsd:'xdg-open',
+	win32:'start'
+}[process.platform]} http://localhost:3000/`;
