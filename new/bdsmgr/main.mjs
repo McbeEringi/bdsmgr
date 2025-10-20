@@ -31,17 +31,18 @@ export class BDSMGR{
 	}
 
 	async start(){
-		const
-			embed=Bun.embeddedFiles.reduce((a,x)=>(a[x.name]=x,a),{}),
-			r2top=(r,s)=>Response.redirect('/'),
-			fs=(r,s)=>new Response(Bun.file(new URL(r.url).pathname.replace(/\./g,'_').slice(1).split('/').reduce((a,x)=>a[x],assets)));
+		const embed=Bun.embeddedFiles.reduce((a,x)=>(a[x.name]=x,a),{});
 		Bun.serve({
 			port:3000,
 			routes:{
-				'/':assets.index_html,'/index':r2top,'/index.html':r2top,
-				'/favicon.ico':fs,'/img/*':fs
+				'/':assets.index_html,
+				'/index':Response.redirect('/'),
+				'/index.html':Response.redirect('/')
 			},
-			fetch:(r,s,x=embed[new URL(r.url).pathname.slice(1)])=>x?new Response(x):new Response(null,{status:404})
+			fetch:(r,s,x=new URL(r.url).pathname.slice(1))=>(
+				x=embed[x]??Bun.file(x.replace(/\./g,'_').split('/').reduce((a,x)=>a[x],assets)),
+				x?new Response(x):new Response(null,{status:404})
+			)
 		})
 	}
 }
