@@ -1,5 +1,6 @@
 import * as path from'node:path';
 import{mkdir}from'node:fs/promises';
+import * as assets from'./assets';
 export class BDSMGR{
 	constructor({
 		root_path='./',
@@ -7,7 +8,10 @@ export class BDSMGR{
 		svr_dir='servers',
 	}={}){
 		// root_path = entry_point+root_path
-		root_path=path.resolve(path.join(path.dirname(Bun.main),root_path));
+		root_path=({
+			'/':_=>root_path,
+			'~':_=>path.join(process.env[process.platform=='win32'?'USERPROFILE':'HOME'],root_path.slice(1))
+		}[root_path[0]]||(_=>path.resolve(path.join(path.dirname(Bun.main),root_path))))();
 		Object.assign(this,{
 			path:{
 				root:root_path,
@@ -27,13 +31,19 @@ export class BDSMGR{
 	}
 
 	async start(){
-		const assets=x=>path.join(import.meta.dirname,'assets',x);
+		const
+			embed=Bun.embeddedFiles.reduce((a,x)=>(a[x.name]=x,a),{}),
+			r2top=(r,s)=>Response.redirect('/'),
+			fs=(r,s)=>new Response(Bun.file(new URL(r.url).pathname.replace(/\./g,'_').slice(1).split('/').reduce((a,x)=>a[x],assets)));
 		Bun.serve({
 			port:3000,
 			routes:{
-				'/':(r,s)=>new Response(Bun.file(assets('index.html'))),
-				'/favicon.ico':(r,s)=>new Response(Bun.file(assets('favicon.ico'))),
-				'/img/*':(r,s)=>new Response(Bun.file(assets(new URL(r.url).pathname)))
+				'/':assets.index_html,'/index':r2top,'/index.html':r2top,
+				'/favicon.ico':fs,'/img/*':fs
+			},
+			fetch(r,s){
+				const x=embed[new URL(r.url).pathname.slice(1)];
+				return x?new Response(x):new Response(null,{status:404});
 			}
 		})
 	}
