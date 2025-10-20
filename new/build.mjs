@@ -6,10 +6,10 @@ await Promise.all([
 			title:'bdsmgr',
 			publisher:'@McbeEringi',
 			version:'0.0.0.1',
-			description:'Minecraft Bedrock server manager baked with BunJS',
+			description:'bdsmgr',
 			copyright:'MIT License',
 			hideConsole:false,
-			icon:'./bdsmgr/assets/img/icon.png'
+			icon:'./bdsmgr/assets/favicon.ico'
 		},
 	},
 	{

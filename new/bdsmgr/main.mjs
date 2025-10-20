@@ -6,6 +6,7 @@ export class BDSMGR{
 		root_path='./',
 		dl_dir='downloads',
 		svr_dir='servers',
+		port=3000
 	}={}){
 		// root_path = entry_point+root_path
 		root_path=({
@@ -17,7 +18,8 @@ export class BDSMGR{
 				root:root_path,
 				dl:path.join(root_path,dl_dir),
 				svr:path.join(root_path,svr_dir),
-			}
+			},
+			port
 		});
 
 		console.log(this);
@@ -30,10 +32,10 @@ export class BDSMGR{
 		return this;
 	}
 
-	async start(){
+	start(){
 		const embed=Bun.embeddedFiles.reduce((a,x)=>(a[x.name]=x,a),{});
 		Bun.serve({
-			port:3000,
+			port:this.port,
 			routes:{
 				'/':assets.index_html,
 				'/index':Response.redirect('/'),
@@ -43,6 +45,18 @@ export class BDSMGR{
 				x=embed[x]??Bun.file(x.replace(/\./g,'_').split('/').reduce((a,x)=>a[x],assets)),
 				x?new Response(x):new Response(null,{status:404})
 			)
-		})
+		});
+		return this;
 	}
+
+	async openBrowserAsync(){
+		return await Bun.$`${{
+			darwin:'open',
+			freebsd:'xdg-open',
+			linux:'xdg-open',
+			openbsd:'xdg-open',
+			win32:['cmd','/c','start']
+		}[process.platform]} http://localhost:${this.port}/`;
+	}
+	openBrowser(){this.openBrowserAsync();return this;}
 }
