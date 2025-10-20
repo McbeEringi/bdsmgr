@@ -1,4 +1,3 @@
-#!/bin/env -S bun
 import{BDSMGR}from'./bdsmgr';
 
 const
