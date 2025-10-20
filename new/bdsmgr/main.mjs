@@ -41,10 +41,7 @@ export class BDSMGR{
 				'/':assets.index_html,'/index':r2top,'/index.html':r2top,
 				'/favicon.ico':fs,'/img/*':fs
 			},
-			fetch(r,s){
-				const x=embed[new URL(r.url).pathname.slice(1)];
-				return x?new Response(x):new Response(null,{status:404});
-			}
+			fetch:(r,s,x=embed[new URL(r.url).pathname.slice(1)])=>x?new Response(x):new Response(null,{status:404})
 		})
 	}
 }
