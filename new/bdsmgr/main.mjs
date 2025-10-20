@@ -44,7 +44,7 @@ export class BDSMGR{
 				'/index.html':Response.redirect('/')
 			},
 			fetch:(r,s,x=new URL(r.url).pathname.slice(1))=>(
-				x=embed[x]??Bun.file(x.replace(/\./g,'_').split('/').reduce((a,x)=>a[x],assets)),
+				x=embed[x]??(x=x.replace(/\./g,'_').split('/').reduce((a,x)=>a?.[x],assets),x&&Bun.file(x)),
 				x?new Response(x):new Response(null,{status:404})
 			)
 		});
