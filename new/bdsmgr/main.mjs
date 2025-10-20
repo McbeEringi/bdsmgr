@@ -8,18 +8,20 @@ export class BDSMGR{
 		svr_dir='servers',
 		port=3000
 	}={}){
-		// root_path = entry_point+root_path
 		root_path=({
 			'/':_=>root_path,
 			'~':_=>path.join(process.env[process.platform=='win32'?'USERPROFILE':'HOME'],root_path.slice(1))
-		}[root_path[0]]||(_=>path.resolve(path.join(path.dirname(Bun.main),root_path))))();
+		}[root_path[0]]||(
+			// DEPRECATED: causes 404 when single-file-executable
+			_=>path.join(path.dirname(Bun.main),root_path)
+		))();
 		Object.assign(this,{
 			path:{
 				root:root_path,
 				dl:path.join(root_path,dl_dir),
 				svr:path.join(root_path,svr_dir),
 			},
-			port
+			port:+port
 		});
 
 		console.log(this);
