@@ -1,2 +1,1 @@
-export * from'./bds';
-export * from'./flint';
+export * from'./main';

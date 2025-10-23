@@ -1,7 +1,6 @@
-import{BDSProc}from'./bds';
 export class FlintProc{
-	constructor({prop,log}){
-		Object.assign(this,{prop,log});
+	constructor(mgr,{prop,log}={}){
+		Object.assign(this,{mgr,prop,log});
 		this.event.addEventListener('ping',(
 			{detail:{sock,id,port,addr}}
 			s=`MCPE;${this.prop?.server_name??'bdsmgr'};;;0;${this.prop?.max_players??0};${this.guid};${this.prop?.level_name??'UNINITIALIZED!'};${this.prop?.gamemode};`
@@ -11,7 +10,8 @@ export class FlintProc{
 		));
 		this.event.addEventListener('req_open',({detail:{l,addr}})=>(
 			this.log(`[${addr}] req_open length: ${l}\n`),
-			await BDSProc.init({soft_stop_after:10*1e3})// TODO: きりかえ うけわたし どうにか する
+			this.mgr.event.dispatchEvent(new CustomEvent('flint_req_open'))
+			// (await BDSProc.init()).softStop({after:10*1e3})
 		));
 		return this;
 	}
@@ -42,7 +42,7 @@ export class FlintProc{
 			x=x.cidr.split('/'),w.bin.startsWith(this.ip2bin[x.family](x[0]).slice(0,+x[1]))
 		),0);
 	}
-	static async init(w){return await(new this(w)).init();}
+	static async init(w){return await new this(w).init();}
 	async init(){
 		const
 		socket={data:async(sock,x,port,addr)=>(// https://wiki.bedrock.dev/servers/raknet
@@ -56,4 +56,6 @@ export class FlintProc{
 		};
 		return this;
 	}
+
+	close(){Object.values(this.proc).forEach(x=>x.closed||x.close());return this;}
 }
