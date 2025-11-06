@@ -1,11 +1,11 @@
 import{chmod}from'node:fs/promises';
 import{join}from'node:path';
 import{delay,listen}from'./util';
-import{SubProcManager}from'./main';
+import{ProcManager}from'./main';
 
 export class BDSProc{
 	constructor(mgr){
-		if(!(mgr instanceof SubProcManager))throw'mgr?';
+		if(!(mgr instanceof ProcManager))throw'mgr?';
 		this.event.addEventListener('done',_=>(
 			this.mgr.event.dispatchEvent(new CustomEvent('bds:done'))
 		));

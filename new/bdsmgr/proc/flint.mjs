@@ -1,8 +1,8 @@
-import{SubProcManager}from'./main';
+import{ProcManager}from'./main';
 
 export class FlintProc{
 	constructor(mgr){
-		if(!(mgr instanceof SubProcManager))throw'mgr?';
+		if(!(mgr instanceof ProcManager))throw'mgr?';
 		Object.assign(this,{mgr});
 		this.event.addEventListener('ping',(
 			{detail:{sock,id,port,addr}},
