@@ -3,10 +3,13 @@ import{FlintProc}from'./flint';
 import{LogProc}from'./log';
 
 export class ProcManager{
-	constructor(){}
-	proc=null;// FlintProc
-	bin=`bin`;// BDSProc
+	constructor(dir){}
+	proc=null;
+	log=await LogProc.init(this);
+	bin_dir=`bin`;// BDSProc
+	log_dir=`log`;// LogProc
 	event=new EventTarget();
+	prop={};
 	// TODO xuid online
 	// msg2obj(w){return w.body.split(',').reduce((a,x,i)=>(
 	// 	[i,x]=x.split(':'),

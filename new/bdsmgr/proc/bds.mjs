@@ -13,8 +13,7 @@ export class BDSProc{
 			this.mgr.event.dispatchEvent(new CustomEvent('bds:data',{detail}))
 		)));
 		return Object.assign(this,{
-			mgr,
-			exec:`./bedrock_server${process.platform=='win32'?'.exe':''}`
+			mgr
 		});
 	}
 
@@ -24,6 +23,7 @@ export class BDSProc{
 	td=new TextDecoder();
 
 	version=null;
+	exec=`./bedrock_server${process.platform=='win32'?'.exe':''}`;
 
 	cmd(x){this.proc.stdin.write(x+'\n');this.proc.stdin.flush();return this;}
 	async close(){this.cmd('stop');return await this.proc.exited;}
@@ -40,8 +40,8 @@ export class BDSProc{
 
 	static async init(w){return await new this(w).init();}
 	async init(){
-		await chmod(join(this.mgr.bin,this.exec),755);
-		this.proc=Bun.spawn({cwd:this.mgr.bin,env:{LD_LIBRARY_PATH:'.'},cmd:[this.exec],stdin:'pipe',stdout:'pipe'});
+		await chmod(join(this.mgr.bin_dir,this.exec),755);
+		this.proc=Bun.spawn({cwd:this.mgr.bin_dir,env:{LD_LIBRARY_PATH:'.'},cmd:[this.exec],stdin:'pipe',stdout:'pipe'});
 		(async(r,x)=>{
 			while(1){
 				x=await r.read();if(x.done)break;
